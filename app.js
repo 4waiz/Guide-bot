@@ -5,8 +5,15 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 // =======================
 //  CONFIG
 // =======================
-// IMPORTANT: Replace this URL with your deployed Cloudflare Worker URL
-const API_PROXY_URL = "https://your-worker-name.your-subdomain.workers.dev";
+const envApiKey =
+  (typeof process !== "undefined" && process?.env?.OPENAI_API_KEY) ||
+  (typeof import.meta !== "undefined" &&
+    import.meta?.env &&
+    (import.meta.env.OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY)) ||
+  (typeof window !== "undefined" && window?.EDGE_GUIDE_OPENAI_KEY) ||
+  "";
+const OPENAI_API_KEY = (envApiKey || "").trim(); // optional inline fallback; leave blank to be prompted
+const API_KEY_STORAGE_KEY = "edge-guide-openai-key";
 const AVATAR_BASE_PATH = "./avatar/avatar/models/";
 const AVATARS = [
   { id: "muhammad", label: "Muhammad", file: "muhammad.glb", gender: "male" },
@@ -37,6 +44,9 @@ const micSupported = Boolean(SpeechRecognition);
 const avatarContainer = document.getElementById("avatar-container");
 const avatarLoading = document.getElementById("avatar-loading");
 const avatarSelect = document.getElementById("avatar-select");
+const avatarThumbnails = document.getElementById("avatar-thumbnails");
+const avatarPrevBtn = document.getElementById("avatar-prev");
+const avatarNextBtn = document.getElementById("avatar-next");
 const output = document.getElementById("output");
 const btnSpeak = document.getElementById("btn-speak");
 const btnPaths = document.getElementById("btn-paths");
@@ -186,6 +196,11 @@ function loadAvatar(avatarId) {
   if (avatarSelect && avatarSelect.value !== avatar.id) {
     avatarSelect.value = avatar.id;
   }
+
+  // Sync thumbnail selection
+  document.querySelectorAll(".avatar-thumb").forEach((t) => {
+    t.classList.toggle("selected", t.dataset.avatar === avatar.id);
+  });
 
   if (avatarLoading) {
     avatarLoading.style.display = "flex";
@@ -411,11 +426,45 @@ function updateFace(now, t) {
 //  AVATAR PICKER UI
 // =======================
 function setupAvatarPicker() {
-  if (!avatarSelect) return;
+  // Handle dropdown (hidden, for compatibility)
+  if (avatarSelect) {
+    avatarSelect.addEventListener("change", (e) => {
+      loadAvatar(e.target.value);
+    });
+  }
 
-  avatarSelect.addEventListener("change", (e) => {
-    loadAvatar(e.target.value);
-  });
+  // Handle thumbnail clicks
+  if (avatarThumbnails) {
+    avatarThumbnails.addEventListener("click", (e) => {
+      const thumb = e.target.closest(".avatar-thumb");
+      if (!thumb) return;
+
+      const avatarId = thumb.dataset.avatar;
+      if (!avatarId) return;
+
+      // Update selected state
+      document.querySelectorAll(".avatar-thumb").forEach((t) => {
+        t.classList.remove("selected");
+      });
+      thumb.classList.add("selected");
+
+      // Load the avatar
+      loadAvatar(avatarId);
+    });
+  }
+
+  // Handle navigation arrows for scrolling
+  if (avatarPrevBtn && avatarThumbnails) {
+    avatarPrevBtn.addEventListener("click", () => {
+      avatarThumbnails.parentElement.scrollBy({ left: -200, behavior: "smooth" });
+    });
+  }
+
+  if (avatarNextBtn && avatarThumbnails) {
+    avatarNextBtn.addEventListener("click", () => {
+      avatarThumbnails.parentElement.scrollBy({ left: 200, behavior: "smooth" });
+    });
+  }
 }
 
 // =======================
@@ -482,26 +531,77 @@ function setStatus(text) {
   if (statusEl) statusEl.textContent = text || "";
 }
 
-// --- OpenAI Chat API helper (via backend proxy) ---
-async function callOpenAI(systemPrompt, userMessage) {
-  const response = await fetch(API_PROXY_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      systemPrompt,
-      userMessage,
-    }),
-  });
+function getStoredApiKey() {
+  try {
+    return (localStorage.getItem(API_KEY_STORAGE_KEY) || "").trim();
+  } catch {
+    return "";
+  }
+}
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || `Server error: ${response.status}`);
+function saveApiKey(key) {
+  const clean = (key || "").trim();
+  if (!clean) return "";
+  try {
+    localStorage.setItem(API_KEY_STORAGE_KEY, clean);
+  } catch {
+    // ignore storage issues (private mode, etc.)
+  }
+  return clean;
+}
+
+function isLikelyApiKey(key) {
+  return /^sk-[A-Za-z0-9-_]{20,}$/.test(key || "");
+}
+
+function getApiKeyOrPrompt() {
+  const inline = (OPENAI_API_KEY || "").trim();
+  const cached = getStoredApiKey();
+  const candidate = cached || inline;
+  if (isLikelyApiKey(candidate)) return candidate;
+
+  const entered = window.prompt("Enter your OpenAI API key (kept in this browser only):", "") || "";
+  return isLikelyApiKey(entered) ? saveApiKey(entered) : "";
+}
+
+// --- OpenAI Chat API helper ---
+async function callOpenAI(systemPrompt, userMessage) {
+  const apiKey = getApiKeyOrPrompt();
+  if (!apiKey) {
+    throw new Error("Add a valid OpenAI API key to use the guide.");
   }
 
-  const data = await response.json();
-  return data.reply;
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        temperature: 0.5,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      const message = errText || response.statusText || "Unknown error";
+      throw new Error(`OpenAI error: ${response.status} - ${message}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content.trim();
+  } catch (err) {
+    if (err.message && err.message.includes("Failed to fetch")) {
+      throw new Error("Could not reach OpenAI. Check your API key (401s can surface as CORS errors in browsers) or network.");
+    }
+    throw err;
+  }
 }
 
 // =======================

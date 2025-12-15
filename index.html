@@ -169,6 +169,127 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
 
+    /* Avatar Picker Carousel */
+    #avatar-picker-carousel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      max-width: 780px;
+      padding: 16px 8px;
+      margin-top: -10px;
+    }
+
+    .avatar-thumbnails-container {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      max-width: 480px;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .avatar-thumbnails-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .avatar-thumbnails {
+      display: flex;
+      gap: 12px;
+      padding: 8px 4px;
+      width: max-content;
+    }
+
+    .avatar-thumb {
+      flex-shrink: 0;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      background: rgba(15, 23, 42, 0.6);
+      cursor: pointer;
+      overflow: hidden;
+      padding: 0;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .avatar-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      border-radius: 50%;
+    }
+
+    .avatar-thumb:hover {
+      transform: scale(1.1);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .avatar-thumb.selected {
+      border-color: #f97316;
+      box-shadow:
+        0 0 0 3px rgba(249, 115, 22, 0.3),
+        0 6px 20px rgba(249, 115, 22, 0.4);
+      transform: scale(1.15);
+    }
+
+    .nav-arrow {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .nav-arrow:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.4);
+      color: #fff;
+    }
+
+    .nav-arrow:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+      #avatar-picker-carousel {
+        padding: 12px 4px;
+        gap: 8px;
+      }
+
+      .avatar-thumbnails-container {
+        max-width: 260px;
+      }
+
+      .avatar-thumb {
+        width: 50px;
+        height: 50px;
+      }
+
+      .nav-arrow {
+        width: 36px;
+        height: 36px;
+      }
+
+      .nav-arrow svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+
     #output {
       min-height: 72px;
       max-height: 220px;
@@ -437,24 +558,78 @@
         <div id="avatar-loading">Loading EDGE Guide...</div>
       </div>
 
-      <div id="hud">
-        <div id="avatar-picker">
-          <div class="label">Choose avatar</div>
-          <select id="avatar-select" aria-label="Choose avatar">
-            <option value="muhammad" selected>Muhammad</option>
-            <option value="anna">Anna</option>
-            <option value="aki">Aki</option>
-            <option value="amari">Amari</option>
-            <option value="leo">Leo</option>
-            <option value="maya">Maya</option>
-            <option value="rose">Rose</option>
-            <option value="shonith">Shonith</option>
-            <option value="tom">Tom</option>
-            <option value="wei">Wei</option>
-            <option value="zara">Zara</option>
-            <option value="zola">Zola</option>
-          </select>
+      <!-- Avatar Picker Carousel -->
+      <div id="avatar-picker-carousel">
+        <button class="nav-arrow nav-prev" id="avatar-prev" aria-label="Previous avatars">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15,18 9,12 15,6"></polyline>
+          </svg>
+        </button>
+
+        <div class="avatar-thumbnails-container">
+          <div class="avatar-thumbnails" id="avatar-thumbnails">
+            <button class="avatar-thumb selected" data-avatar="muhammad" aria-label="Select Muhammad">
+              <img src="./avatar/avatar/images/muhammad.png" alt="Muhammad" />
+            </button>
+            <button class="avatar-thumb" data-avatar="anna" aria-label="Select Anna">
+              <img src="./avatar/avatar/images/anna.png" alt="Anna" />
+            </button>
+            <button class="avatar-thumb" data-avatar="aki" aria-label="Select Aki">
+              <img src="./avatar/avatar/images/aki.png" alt="Aki" />
+            </button>
+            <button class="avatar-thumb" data-avatar="amari" aria-label="Select Amari">
+              <img src="./avatar/avatar/images/amari.png" alt="Amari" />
+            </button>
+            <button class="avatar-thumb" data-avatar="leo" aria-label="Select Leo">
+              <img src="./avatar/avatar/images/leo.png" alt="Leo" />
+            </button>
+            <button class="avatar-thumb" data-avatar="maya" aria-label="Select Maya">
+              <img src="./avatar/avatar/images/maya.png" alt="Maya" />
+            </button>
+            <button class="avatar-thumb" data-avatar="rose" aria-label="Select Rose">
+              <img src="./avatar/avatar/images/rose.png" alt="Rose" />
+            </button>
+            <button class="avatar-thumb" data-avatar="shonith" aria-label="Select Shonith">
+              <img src="./avatar/avatar/images/shonith.png" alt="Shonith" />
+            </button>
+            <button class="avatar-thumb" data-avatar="tom" aria-label="Select Tom">
+              <img src="./avatar/avatar/images/tom.png" alt="Tom" />
+            </button>
+            <button class="avatar-thumb" data-avatar="wei" aria-label="Select Wei">
+              <img src="./avatar/avatar/images/wei.png" alt="Wei" />
+            </button>
+            <button class="avatar-thumb" data-avatar="zara" aria-label="Select Zara">
+              <img src="./avatar/avatar/images/zara.png" alt="Zara" />
+            </button>
+            <button class="avatar-thumb" data-avatar="zola" aria-label="Select Zola">
+              <img src="./avatar/avatar/images/zola.png" alt="Zola" />
+            </button>
+          </div>
         </div>
+
+        <button class="nav-arrow nav-next" id="avatar-next" aria-label="Next avatars">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div id="hud">
+        <!-- Hidden select for JS compatibility -->
+        <select id="avatar-select" aria-label="Choose avatar" style="display: none;">
+          <option value="muhammad" selected>Muhammad</option>
+          <option value="anna">Anna</option>
+          <option value="aki">Aki</option>
+          <option value="amari">Amari</option>
+          <option value="leo">Leo</option>
+          <option value="maya">Maya</option>
+          <option value="rose">Rose</option>
+          <option value="shonith">Shonith</option>
+          <option value="tom">Tom</option>
+          <option value="wei">Wei</option>
+          <option value="zara">Zara</option>
+          <option value="zola">Zola</option>
+        </select>
 
         <div id="output">
           <strong>EDGE Guide:</strong> Salam! I'm your AI assistant. Tap a button to begin.
