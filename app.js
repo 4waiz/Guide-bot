@@ -916,9 +916,6 @@ function formatTextForOutput(label, text) {
   return `<strong>${label}:</strong> ${safe}`;
 }
 
-// =======================
-//  VOICE PICKER
-// =======================
 function initVoiceSelection() {
   const pickVoice = () => {
     availableVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
