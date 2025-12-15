@@ -38,9 +38,6 @@ const CHAR_PER_SECOND = 14;
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const micSupported = Boolean(SpeechRecognition);
 
-// =======================
-//  DOM REFERENCES
-// =======================
 const avatarContainer = document.getElementById("avatar-container");
 const avatarLoading = document.getElementById("avatar-loading");
 const avatarSelect = document.getElementById("avatar-select");
