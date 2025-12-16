@@ -93,13 +93,13 @@
     #app {
       width: 100%;
       max-width: 560px;
-      min-height: 100%;
+      max-height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      gap: clamp(12px, 3vw, 20px);
-      padding: clamp(18px, 3vw, 28px);
+      gap: clamp(8px, 2vw, 14px);
+      padding: clamp(12px, 2vw, 20px);
       position: relative;
       background: var(--glass-panel);
       border: 1px solid var(--glass-border);
@@ -107,7 +107,7 @@
       box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 rgba(255,255,255,0.35);
       backdrop-filter: blur(18px) saturate(140%);
       -webkit-backdrop-filter: blur(18px) saturate(140%);
-      overflow: visible;
+      overflow: hidden;
       z-index: 1;
       margin: 0 auto;
     }
@@ -121,12 +121,28 @@
       padding: 8px 16px;
       z-index: 20;
       flex-shrink: 0;
+      gap: clamp(10px, 3vw, 22px);
+      flex-wrap: wrap;
       background: linear-gradient(120deg, rgba(255,255,255,0.55), rgba(255,255,255,0.28));
       border: 1px solid rgba(255,255,255,0.65);
       border-radius: 18px;
       box-shadow: 0 16px 40px -24px rgba(15,23,42,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
+    }
+
+    .top-logo {
+      height: 44px;
+      width: auto;
+      padding: 6px 12px;
+      background: linear-gradient(120deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3));
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.8);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 12px 30px -18px rgba(15,23,42,0.35);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      flex: 0 0 auto;
+      display: block;
     }
 
     .glassy-btn-orange {
@@ -169,23 +185,22 @@
 
     /* --- AVATAR MAIN (Big Sphere) --- */
     #avatar-wrapper {
-      flex: 0 0 auto;
+      flex: 0 1 auto;
       display: flex;
       align-items: center;
       justify-content: center;
       width: 100%;
       position: relative;
       z-index: 5;
-      /* Removed negative margin to prevent overlap */
-      margin: clamp(4px, 1.5vw, 10px) 0; 
-      min-height: clamp(240px, 54vw, 420px);
+      margin: 0;
+      min-height: clamp(180px, 40vw, 320px);
     }
 
     #avatar-container {
       position: relative;
-      /* Large size */
-      width: clamp(220px, 64vw, 360px);
-      height: clamp(220px, 64vw, 360px);
+      /* Smaller size to fit screen */
+      width: clamp(180px, 50vw, 280px);
+      height: clamp(180px, 50vw, 280px);
       border-radius: 50%;
       background: radial-gradient(circle at 35% 35%, #f9fbff, #d7dfe8 70%, #c8d1db 100%);
       box-shadow: 
@@ -217,17 +232,15 @@
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      gap: clamp(10px, 3vw, 24px);
-      /* Positive margin to create GAP */
-      margin-top: 10px; 
-      margin-bottom: clamp(12px, 3vw, 24px);
+      gap: clamp(8px, 2vw, 16px);
+      margin: 0;
       position: relative;
       z-index: 10;
       flex-shrink: 0;
-      padding: 10px 12px;
+      padding: 8px 10px;
       background: linear-gradient(120deg, rgba(255,255,255,0.48), rgba(255,255,255,0.26));
       border: 1px solid var(--glass-border);
-      border-radius: 22px;
+      border-radius: 18px;
       box-shadow: 0 14px 45px -22px rgba(15, 23, 42, 0.45), inset 0 1px 0 rgba(255,255,255,0.6);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
@@ -235,8 +248,8 @@
     
     /* Arrows still lifted to keep the "smile" curve look relative to thumbnails */
     .nav-arrow {
-      width: 48px;
-      height: 48px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       border: 1px solid rgba(255,255,255,0.9);
       background: linear-gradient(145deg, rgba(255,255,255,0.85), rgba(255,255,255,0.45));
@@ -249,7 +262,7 @@
       transition: all 0.2s;
       flex-shrink: 0;
       /* Lift arrows up relative to thumbnails */
-      margin-bottom: 40px; 
+      margin-bottom: 28px;
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
     }
@@ -273,8 +286,8 @@
     }
 
     .avatar-thumb {
-      width: 56px;
-      height: 56px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       border: 2px solid rgba(255,255,255,0.9);
       background: linear-gradient(145deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35));
@@ -298,13 +311,13 @@
 
     /* Selected State - Pops up slightly, but no overlap with main sphere */
     .avatar-thumb.selected {
-      width: 68px; 
-      height: 68px;
+      width: 56px;
+      height: 56px;
       border-color: #fff;
-      box-shadow: 
-        0 0 0 4px var(--orange-mid),
-        0 15px 35px rgba(255, 159, 0, 0.4);
-      transform: translateY(-10px) scale(1.05);
+      box-shadow:
+        0 0 0 3px var(--orange-mid),
+        0 12px 28px rgba(255, 159, 0, 0.4);
+      transform: translateY(-8px) scale(1.05);
       z-index: 20;
       opacity: 1;
     }
@@ -321,18 +334,19 @@
       backdrop-filter: blur(24px) saturate(150%);
       -webkit-backdrop-filter: blur(24px) saturate(150%);
       border: 1px solid var(--glass-border);
-      border-radius: 32px;
+      border-radius: 24px;
       box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.65);
-      padding: clamp(16px, 3vw, 28px);
+      padding: clamp(12px, 2vw, 20px);
       display: flex;
       flex-direction: column;
-      gap: clamp(10px, 2.5vw, 16px);
+      gap: clamp(8px, 2vw, 12px);
       position: relative;
-      margin-bottom: clamp(10px, 2.5vw, 20px);
+      margin: 0;
       z-index: 30;
-      flex-shrink: 0;
+      flex-shrink: 1;
       align-self: stretch;
       overflow: hidden;
+      min-height: 0;
     }
 
     #hud::before {
@@ -557,24 +571,30 @@
 
     @media (max-width: 600px) {
       /* Mobile layout tweaks */
-      #avatar-container { width: 78vw; height: 78vw; }
-      .glassy-btn-orange { min-width: 100px; height: 42px; font-size: 0.8rem; }
-      .nav-arrow { width: 40px; height: 40px; margin-bottom: 24px; }
-      /* Reduce gap slightly on small screens */
-      #avatar-picker-carousel { margin-top: 5px; gap: 12px; } 
-      #hud { border-radius: 24px; }
-      #output { font-size: 0.98rem; }
-      #status-row { font-size: 0.8rem; }
-      #app { gap: 14px; padding: 18px 14px 22px; }
+      #avatar-container { width: 55vw; height: 55vw; max-width: 220px; max-height: 220px; }
+      #avatar-wrapper { min-height: 160px; }
+      .glassy-btn-orange { min-width: 90px; height: 40px; font-size: 0.75rem; }
+      .nav-arrow { width: 36px; height: 36px; margin-bottom: 20px; }
+      #avatar-picker-carousel { padding: 6px 8px; gap: 8px; }
+      .avatar-thumb { width: 42px; height: 42px; }
+      .avatar-thumb.selected { width: 50px; height: 50px; }
+      #hud { border-radius: 20px; padding: 10px 12px; }
+      #output { font-size: 0.9rem; max-height: 80px; }
+      #status-row { font-size: 0.75rem; padding: 8px 10px; }
+      #app { gap: 8px; padding: 10px; border-radius: 28px; }
+      .top-controls { padding: 6px 12px; border-radius: 14px; }
+      .top-logo { height: 34px; padding: 4px 10px; }
       #input-modal .input-card { width: min(520px, 96vw); padding: 22px; }
     }
-    
+
     /* Ensure responsiveness for short screens */
-    @media (max-height: 800px) {
-      #avatar-container { width: clamp(240px, 60vw, 320px); height: clamp(240px, 60vw, 320px); }
-      #avatar-picker-carousel { margin-top: 5px; }
-      .avatar-thumb.selected { width: 70px; height: 70px; }
-      .nav-arrow { margin-bottom: 30px; }
+    @media (max-height: 750px) {
+      #avatar-container { width: 45vw; height: 45vw; max-width: 200px; max-height: 200px; }
+      #avatar-wrapper { min-height: 140px; }
+      .avatar-thumb { width: 38px; height: 38px; }
+      .avatar-thumb.selected { width: 46px; height: 46px; }
+      .nav-arrow { width: 32px; height: 32px; margin-bottom: 16px; }
+      #output { max-height: 60px; }
     }
   </style>
 </head>
@@ -586,6 +606,7 @@
       <!-- Top Buttons -->
       <div class="top-controls">
         <button id="btn-speak" class="glassy-btn-orange">Speak</button>
+        <img src="./logo.png" alt="EDGE Guide logo" class="top-logo">
         <button id="btn-paths" class="glassy-btn-orange">Paths</button>
       </div>
 

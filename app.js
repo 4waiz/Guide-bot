@@ -1000,21 +1000,11 @@ function actuallySpeak(text, resolve) {
     const voiceLang = voice && voice.lang ? voice.lang : "en-US";
     utterance.voice = voice;
     utterance.lang = voiceLang;
-    const isArabic = voiceLang.toLowerCase().startsWith("ar");
-    const avatar = AVATARS.find((a) => a.id === currentAvatarId);
-    const isMale = avatar?.gender === "male";
-    const isFemale = avatar?.gender === "female";
-    let rate = isArabic ? 0.9 : 0.98;
-    let pitch = isArabic ? 0.8 : 0.95;
-    if (isMale) {
-      rate -= 0.05;
-      pitch -= 0.1;
-    } else if (isFemale) {
-      rate += 0.05;
-      pitch += 0.15;
-    }
-    utterance.rate = Math.max(0.8, Math.min(rate, 1.15));
-    utterance.pitch = Math.max(0.7, Math.min(pitch, 1.25));
+
+    // Get avatar-specific voice settings for distinct voices
+    const settings = avatarVoiceSettings[currentAvatarId] || { pitch: 1.0, rate: 1.0 };
+    utterance.pitch = Math.max(0.5, Math.min(settings.pitch, 2.0));
+    utterance.rate = Math.max(0.5, Math.min(settings.rate, 1.5));
 
     utterance.onstart = () => {
       isTalking = true;
@@ -1062,67 +1052,101 @@ function setStopButton(enabled) {
   if (stopSpeechBtn) stopSpeechBtn.disabled = !enabled;
 }
 
+// Voice settings per avatar - each has distinct pitch/rate for unique sound
+const avatarVoiceSettings = {
+  muhammad: { pitch: 0.85, rate: 0.92, gender: "male" },
+  anna: { pitch: 1.15, rate: 1.0, gender: "female" },
+  aki: { pitch: 0.95, rate: 1.05, gender: "male" },
+  amari: { pitch: 1.2, rate: 0.95, gender: "female" },
+  leo: { pitch: 0.8, rate: 0.88, gender: "male" },
+  maya: { pitch: 1.25, rate: 1.02, gender: "female" },
+  rose: { pitch: 1.1, rate: 0.98, gender: "female" },
+  shonith: { pitch: 0.9, rate: 0.95, gender: "male" },
+  tom: { pitch: 0.75, rate: 0.9, gender: "male" },
+  wei: { pitch: 1.18, rate: 1.0, gender: "female" },
+  zara: { pitch: 1.22, rate: 0.97, gender: "female" },
+  zola: { pitch: 1.12, rate: 1.03, gender: "female" }
+};
+
 function selectVoiceForAvatar(avatarId) {
   const avatar = AVATARS.find((a) => a.id === avatarId);
   if (!avatar || !availableVoices.length) return;
 
   const gender = avatar.gender || "neutral";
+
+  // Voice preferences per avatar - includes iOS, Windows, Chrome voices
   const avatarVoiceMap = {
     muhammad: [
       "Microsoft Naayf Online (Natural) - Arabic (Saudi Arabia)",
-      "Microsoft Hamed Online (Natural) - Arabic (Saudi Arabia)",
-      "Microsoft Guy Online (Natural) - English (United States)"
+      "Microsoft Guy Online (Natural) - English (United States)",
+      "Alex", "Daniel", "Google UK English Male", "Aaron"
     ],
     anna: [
       "Microsoft Aria Online (Natural) - English (United States)",
-      "Microsoft Jenny Online (Natural) - English (United States)",
-      "Google UK English Female"
+      "Samantha", "Karen", "Google UK English Female", "Fiona"
     ],
     aki: [
-      "Google US English",
-      "Microsoft Aria Online (Natural) - English (United States)"
+      "Microsoft Ryan Online (Natural) - English (United States)",
+      "Alex", "Daniel", "Google US English", "Tom"
     ],
     amari: [
-      "Microsoft Aria Online (Natural) - English (United States)",
-      "Microsoft Jenny Online (Natural) - English (United States)"
+      "Microsoft Jenny Online (Natural) - English (United States)",
+      "Samantha", "Tessa", "Google UK English Female", "Moira"
     ],
     leo: [
       "Microsoft Guy Online (Natural) - English (United States)",
-      "Microsoft Ryan Online (Natural) - English (United States)"
+      "Daniel", "Alex", "Google UK English Male", "Oliver"
     ],
     maya: [
-      "Google UK English Female",
-      "Microsoft Jenny Online (Natural) - English (United States)"
+      "Microsoft Aria Online (Natural) - English (United States)",
+      "Karen", "Samantha", "Google UK English Female", "Victoria"
     ],
     rose: [
-      "Google UK English Female",
-      "Microsoft Aria Online (Natural) - English (United States)"
+      "Microsoft Jenny Online (Natural) - English (United States)",
+      "Moira", "Samantha", "Google UK English Female", "Kate"
     ],
     shonith: [
-      "Google UK English Male",
-      "Microsoft Ryan Online (Natural) - English (United States)"
+      "Microsoft Ryan Online (Natural) - English (United States)",
+      "Rishi", "Daniel", "Google UK English Male", "Alex"
     ],
     tom: [
       "Microsoft Guy Online (Natural) - English (United States)",
-      "Google US English"
+      "Alex", "Fred", "Google US English", "Ralph"
     ],
     wei: [
-      "Google US English",
-      "Microsoft Jenny Online (Natural) - English (United States)"
+      "Microsoft Jenny Online (Natural) - English (United States)",
+      "Ting-Ting", "Samantha", "Google US English", "Mei-Jia"
     ],
     zara: [
-      "Microsoft Jenny Online (Natural) - English (United States)",
-      "Google UK English Female"
+      "Microsoft Aria Online (Natural) - English (United States)",
+      "Tessa", "Karen", "Google UK English Female", "Samantha"
     ],
     zola: [
-      "Google US English",
-      "Microsoft Aria Online (Natural) - English (United States)"
+      "Microsoft Jenny Online (Natural) - English (United States)",
+      "Samantha", "Victoria", "Google US English", "Fiona"
     ]
   };
 
+  // Gender fallback voices
+  const genderFallback = {
+    male: ["Alex", "Daniel", "Google UK English Male", "Microsoft Guy Online (Natural) - English (United States)"],
+    female: ["Samantha", "Karen", "Google UK English Female", "Microsoft Aria Online (Natural) - English (United States)"],
+    neutral: ["Samantha", "Alex", "Google US English"]
+  };
+
   const names = avatarVoiceMap[avatar.id] || genderFallback[gender] || genderFallback.neutral;
+
+  // Try to find a matching voice
   preferredVoice =
-    availableVoices.find((v) => names.includes(v.name)) ||
+    availableVoices.find((v) => names.some(n => v.name.includes(n))) ||
+    availableVoices.find((v) => {
+      // Match by gender for fallback
+      const isFemale = /female|samantha|karen|victoria|fiona|moira|tessa/i.test(v.name);
+      const isMale = /male|alex|daniel|tom|fred|ralph/i.test(v.name);
+      if (gender === "female") return isFemale;
+      if (gender === "male") return isMale && !isFemale;
+      return true;
+    }) ||
     availableVoices.find((v) => v.lang && v.lang.toLowerCase().startsWith("en")) ||
     availableVoices[0] ||
     null;
