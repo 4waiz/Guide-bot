@@ -92,24 +92,24 @@
 
     #app {
       width: 100%;
-      max-width: 560px;
+      max-width: 740px;
       max-height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      gap: clamp(8px, 2vw, 14px);
-      padding: clamp(12px, 2vw, 20px);
+      gap: clamp(14px, 2.4vw, 20px);
+      padding: clamp(16px, 2.6vw, 28px);
       position: relative;
       background: var(--glass-panel);
       border: 1px solid var(--glass-border);
-      border-radius: 36px;
+      border-radius: 40px;
       box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 rgba(255,255,255,0.35);
       backdrop-filter: blur(18px) saturate(140%);
       -webkit-backdrop-filter: blur(18px) saturate(140%);
       overflow: hidden;
       z-index: 1;
-      margin: 0 auto;
+      margin: clamp(10px, 2vw, 26px) auto 0 auto;
     }
 
     /* --- TOP BUTTONS (Orange Glossy) --- */
@@ -132,15 +132,15 @@
     }
 
     .top-logo {
-      height: 44px;
+      height: 80px;
       width: auto;
-      padding: 6px 12px;
-      background: linear-gradient(120deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3));
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.8);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 12px 30px -18px rgba(15,23,42,0.35);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      padding: 0;
+      background: none;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
       flex: 0 0 auto;
       display: block;
     }
@@ -193,14 +193,14 @@
       position: relative;
       z-index: 5;
       margin: 0;
-      min-height: clamp(180px, 40vw, 320px);
+      min-height: clamp(260px, 54vw, 400px);
     }
 
     #avatar-container {
       position: relative;
-      /* Smaller size to fit screen */
-      width: clamp(180px, 50vw, 280px);
-      height: clamp(180px, 50vw, 280px);
+      /* Larger hero size while staying responsive */
+      width: clamp(240px, 56vw, 380px);
+      height: clamp(240px, 56vw, 380px);
       border-radius: 50%;
       background: radial-gradient(circle at 35% 35%, #f9fbff, #d7dfe8 70%, #c8d1db 100%);
       box-shadow: 
@@ -571,8 +571,8 @@
 
     @media (max-width: 600px) {
       /* Mobile layout tweaks */
-      #avatar-container { width: 55vw; height: 55vw; max-width: 220px; max-height: 220px; }
-      #avatar-wrapper { min-height: 160px; }
+      #avatar-container { width: 68vw; height: 68vw; max-width: 300px; max-height: 300px; }
+      #avatar-wrapper { min-height: 230px; }
       .glassy-btn-orange { min-width: 90px; height: 40px; font-size: 0.75rem; }
       .nav-arrow { width: 36px; height: 36px; margin-bottom: 20px; }
       #avatar-picker-carousel { padding: 6px 8px; gap: 8px; }
@@ -583,14 +583,14 @@
       #status-row { font-size: 0.75rem; padding: 8px 10px; }
       #app { gap: 8px; padding: 10px; border-radius: 28px; }
       .top-controls { padding: 6px 12px; border-radius: 14px; }
-      .top-logo { height: 34px; padding: 4px 10px; }
+      .top-logo { height: 40px; padding: 6px 12px; }
       #input-modal .input-card { width: min(520px, 96vw); padding: 22px; }
     }
 
     /* Ensure responsiveness for short screens */
     @media (max-height: 750px) {
-      #avatar-container { width: 45vw; height: 45vw; max-width: 200px; max-height: 200px; }
-      #avatar-wrapper { min-height: 140px; }
+      #avatar-container { width: 56vw; height: 56vw; max-width: 260px; max-height: 260px; }
+      #avatar-wrapper { min-height: 190px; }
       .avatar-thumb { width: 38px; height: 38px; }
       .avatar-thumb.selected { width: 46px; height: 46px; }
       .nav-arrow { width: 32px; height: 32px; margin-bottom: 16px; }
