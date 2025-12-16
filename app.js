@@ -5,15 +5,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 // =======================
 //  CONFIG
 // =======================
-const envApiKey =
-  (typeof process !== "undefined" && process?.env?.OPENAI_API_KEY) ||
-  (typeof import.meta !== "undefined" &&
-    import.meta?.env &&
-    (import.meta.env.OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY)) ||
-  (typeof window !== "undefined" && window?.EDGE_GUIDE_OPENAI_KEY) ||
-  "";
-const OPENAI_API_KEY = (envApiKey || "").trim(); // optional inline fallback; leave blank to be prompted
-const envFileApiKeyPromise = loadEnvApiKeyFromFile();
+const OPENAI_API_KEY = "sk-svcacct-B9bASdb6-OH5kjv_bL5lCSTEZc-VeavUns-iL5WvK9cV6bytK23-5cQbhgEjT3BlbkFJKJi2cmazpU-2-spYsWzEUXXeVdxA38TV62Xt2HgLbVo1Y9PSDN4LrA28AgUA";
 const API_KEY_STORAGE_KEY = "edge-guide-openai-key";
 const AVATAR_BASE_PATH = "./avatar/avatar/models/";
 const AVATARS = [
@@ -529,22 +521,6 @@ function setStatus(text) {
   if (statusEl) statusEl.textContent = text || "";
 }
 
-async function loadEnvApiKeyFromFile() {
-  try {
-    const res = await fetch("./.env", { cache: "no-store" });
-    if (!res.ok) return "";
-    const text = await res.text();
-    const match = text.match(/^\s*OPENAI_API_KEY\s*=\s*(.+)\s*$/m);
-    if (!match) return "";
-    const raw = match[1].trim().replace(/^['"]|['"]$/g, "");
-    const clean = raw.split("#")[0].trim();
-    return isLikelyApiKey(clean) ? clean : "";
-  } catch (err) {
-    console.warn("Unable to read .env for API key", err);
-    return "";
-  }
-}
-
 function getStoredApiKey() {
   try {
     return (localStorage.getItem(API_KEY_STORAGE_KEY) || "").trim();
@@ -569,10 +545,9 @@ function isLikelyApiKey(key) {
 }
 
 async function getApiKeyOrPrompt() {
-  const envFileKey = await envFileApiKeyPromise;
   const inline = (OPENAI_API_KEY || "").trim();
   const cached = getStoredApiKey();
-  const candidate = envFileKey || inline || cached;
+  const candidate = inline || cached;
 
   if (isLikelyApiKey(candidate)) {
     if (candidate !== cached) saveApiKey(candidate);
@@ -586,9 +561,8 @@ async function getApiKeyOrPrompt() {
 async function callOpenAI(systemPrompt, userMessage) {
   const apiKey = await getApiKeyOrPrompt();
   if (!apiKey) {
-    throw new Error("Add a valid OPENAI_API_KEY in your .env file to use the guide.");
+    throw new Error("Missing OPENAI_API_KEY. Add it in app.js.");
   }
-
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -613,10 +587,14 @@ async function callOpenAI(systemPrompt, userMessage) {
     }
 
     const data = await response.json();
-    return data.choices[0].message.content.trim();
+    const content = data?.choices?.[0]?.message?.content?.trim?.();
+    if (!content) {
+      throw new Error("OpenAI returned an empty response.");
+    }
+    return content;
   } catch (err) {
     if (err.message && err.message.includes("Failed to fetch")) {
-      throw new Error("Could not reach OpenAI. Check your API key (401s can surface as CORS errors in browsers) or network.");
+      throw new Error("Could not reach OpenAI. Check your network or browser CORS setup.");
     }
     throw err;
   }
