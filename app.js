@@ -3,10 +3,9 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 // =======================
-//  CONFIG
+//  CONFIG (Local FAQ bot)
 // =======================
-const OPENAI_API_KEY = "sk-svcacct-B9bASdb6-OH5kjv_bL5lCSTEZc-VeavUns-iL5WvK9cV6bytK23-5cQbhgEjT3BlbkFJKJi2cmazpU-2-spYsWzEUXXeVdxA38TV62Xt2HgLbVo1Y9PSDN4LrA28AgUA";
-const API_KEY_STORAGE_KEY = "edge-guide-openai-key";
+// No external API. Answers come from a local FAQ list about EDGE Learning & Innovation Factory.
 const AVATAR_BASE_PATH = "./avatar/avatar/models/";
 const AVATARS = [
   { id: "muhammad", label: "Muhammad", file: "muhammad.glb", gender: "male" },
@@ -26,6 +25,76 @@ const DEFAULT_AVATAR_ID = "muhammad";
 
 // How fast the avatar talks
 const CHAR_PER_SECOND = 14;
+
+// FAQ knowledge base (about EDGE Learning & Innovation Factory)
+const FAQS = [
+  {
+    q: "What is EDGE Learning & Innovation Factory?",
+    a: "EDGE Learning & Innovation Factory is EDGE Group’s training and upskilling hub in Abu Dhabi, focused on advanced technology, digital transformation, and practical industry learning.",
+    k: ["what", "edge", "learning", "innovation", "factory", "hub", "center"]
+  },
+  { q: "Where is the facility located?", a: "The Learning & Innovation Factory is in Abu Dhabi, UAE, within EDGE Group’s facilities. Visitors typically register before arrival.", k: ["where", "location", "abu dhabi", "uae", "address", "facility"] },
+  { q: "Do you offer guided tours?", a: "Yes. Tours can be arranged for partners, customers, and education groups. Submit a visit request through EDGE or LIF contact channels.", k: ["tour", "guided", "visit", "site visit", "book tour"] },
+  { q: "What programs do you offer?", a: "Programs span robotics, AI/ML, digital transformation, cyber, additive manufacturing, Industry 4.0, and leadership for tech-led operations.", k: ["programs", "courses", "offer", "modules", "catalog"] },
+  { q: "Who can enroll?", a: "Professionals, engineers, technicians, and graduates in tech/manufacturing fields can enroll. Some tracks require prerequisites; enterprise cohorts are common.", k: ["enroll", "who", "eligibility", "apply", "join"] },
+  { q: "Do you provide corporate training?", a: "Yes. LIF delivers custom corporate programs for EDGE entities and external partners across aerospace, defense, and industry 4.0 topics.", k: ["corporate", "enterprise", "company", "team", "group"] },
+  { q: "Are there short courses or bootcamps?", a: "Yes. There are intensive bootcamps and short courses in robotics, AI, cyber, additive manufacturing, and smart factory operations.", k: ["bootcamp", "short course", "intensive", "workshop"] },
+  { q: "Do you have online or hybrid learning?", a: "Delivery is primarily hands-on onsite. Some modules can be delivered hybrid or blended on request.", k: ["online", "remote", "hybrid", "virtual"] },
+  { q: "What labs are available?", a: "Labs include robotics cells, industrial automation, AI/ML, cyber ranges, additive manufacturing, digital twins, and smart factory simulations.", k: ["lab", "labs", "facilities", "equipment", "workshop"] },
+  { q: "Do you have a makerspace?", a: "Yes. The makerspace supports prototyping with 3D printing, laser cutting, electronics benches, and small CNC capability.", k: ["makerspace", "prototype", "prototyping", "3d print", "laser"] },
+  { q: "Is there a focus on Industry 4.0?", a: "Yes. Industry 4.0 readiness, digital twins, IoT integration, and smart factory operations are core pillars of the training.", k: ["industry 4.0", "smart factory", "digital twin", "iot", "automation"] },
+  { q: "Do you teach robotics programming?", a: "Yes. Courses cover robot programming, safety, and integration with industrial control systems and sensors.", k: ["robotics", "robot", "programming", "arm", "automation"] },
+  { q: "Do you cover AI and machine learning?", a: "Yes. AI/ML tracks include model development, deployment, MLOps basics, and applied use cases in industrial contexts.", k: ["ai", "ml", "machine learning", "artificial intelligence"] },
+  { q: "Do you teach cybersecurity?", a: "Yes. There are cyber labs with hands-on scenarios for defensive security, OT security, and secure system design.", k: ["cyber", "security", "cybersecurity", "ot security", "defense"] },
+  { q: "Do you support additive manufacturing?", a: "Yes. Additive manufacturing training includes design for AM, material selection, and post-processing basics.", k: ["additive", "3d printing", "manufacturing", "am"] },
+  { q: "Do you offer internships?", a: "Internship availability varies. Typically coordinated with EDGE entities and partner universities. Inquire through EDGE careers channels.", k: ["intern", "internship", "student", "graduate"] },
+  { q: "Is there career support?", a: "Career development is embedded: mentorship, portfolio-worthy projects, and exposure to EDGE tech programs.", k: ["career", "jobs", "placement", "mentorship"] },
+  { q: "How long are the programs?", a: "Lengths vary from 1–3 day workshops to multi-week bootcamps and multi-month upskilling tracks.", k: ["duration", "how long", "weeks", "months"] },
+  { q: "Do you certify participants?", a: "Programs can include EDGE-branded certificates of completion. Some tracks can align with external certifications on request.", k: ["certificate", "certification", "credentials"] },
+  { q: "How do I apply?", a: "Submit an inquiry or application via EDGE Learning & Innovation Factory contact forms or through your organization’s training coordinator.", k: ["apply", "application", "sign up", "register"] },
+  { q: "Is there a cost?", a: "Pricing depends on the program scope, duration, and cohort size. Corporate packages and tailored sessions are available.", k: ["cost", "price", "fees", "tuition", "pricing"] },
+  { q: "Can programs be customized?", a: "Yes. Content can be tailored to your organization’s tech stack, maturity level, and operational goals.", k: ["custom", "tailor", "bespoke", "adapt", "organization"] },
+  { q: "Do you partner with universities?", a: "LIF collaborates with universities and vocational institutes for capstones, internships, and joint training initiatives.", k: ["university", "universities", "college", "academic", "partner"] },
+  { q: "Do you host hackathons or challenges?", a: "Yes. Innovation challenges, hackathons, and design sprints are organized periodically to solve real EDGE use cases.", k: ["hackathon", "challenge", "innovation", "sprint"] },
+  { q: "Is there hardware training?", a: "Yes. Hands-on with sensors, PLCs, robotics controllers, edge devices, and industrial networking.", k: ["hardware", "plc", "sensors", "edge devices", "controllers"] },
+  { q: "Do you teach cloud or edge computing?", a: "Yes. Courses include edge-to-cloud patterns, data pipelines, and secure deployments for industrial workloads.", k: ["cloud", "edge computing", "data pipeline"] },
+  { q: "Do you cover AR or VR?", a: "Some modules include AR/VR for training, maintenance support, and visualization in industrial contexts.", k: ["ar", "vr", "augmented", "virtual reality"] },
+  { q: "Do you have leadership programs?", a: "Yes. Leadership tracks focus on digital transformation strategy, change management, and tech-enabled operations.", k: ["leadership", "manager", "executive", "strategy"] },
+  { q: "Is there a makerspace membership?", a: "Access is typically program-based. Membership-style access can be arranged for approved partners and teams.", k: ["membership", "access", "makerspace membership"] },
+  { q: "Can I bring my own project?", a: "Yes, projects can be integrated into training with prior review to ensure safety and fit with lab capabilities.", k: ["own project", "bring project", "custom project"] },
+  { q: "Do you support startups?", a: "Startups aligned with advanced tech or industrial domains can request tailored training or prototyping support.", k: ["startup", "startups", "founder", "venture"] },
+  { q: "What languages are used?", a: "Primary delivery is in English. Arabic support can be arranged for groups where needed.", k: ["language", "english", "arabic"] },
+  { q: "Do you provide equipment safety training?", a: "Yes. Safety inductions and standard operating procedures are part of lab onboarding.", k: ["safety", "ppe", "induction", "sop"] },
+  { q: "Are there evening or weekend classes?", a: "Scheduling can be flexible for corporate cohorts; public schedules vary. Inquire for current timings.", k: ["evening", "weekend", "schedule", "timing"] },
+  { q: "How many people per cohort?", a: "Cohort sizes vary. Hands-on labs are typically small (8–16) to ensure instructor attention.", k: ["cohort size", "class size", "participants"] },
+  { q: "Is housing provided?", a: "Housing is not standard. For visiting cohorts, EDGE can advise on nearby accommodation options.", k: ["housing", "accommodation", "stay"] },
+  { q: "Is catering provided?", a: "Basic refreshments can be arranged for cohorts; full catering is arranged on request for longer sessions.", k: ["catering", "food", "meals"] },
+  { q: "Do you offer certifications with vendors?", a: "Vendor-aligned certifications can be embedded case-by-case depending on tooling and agreements.", k: ["vendor", "certification", "partners"] },
+  { q: "Do you teach data analytics?", a: "Yes. Data analytics for industrial telemetry, dashboards, and KPI tracking is covered in several tracks.", k: ["data", "analytics", "dashboards", "kpi"] },
+  { q: "Is there electronics training?", a: "Yes. Basics of circuits, sensors, and embedded prototyping are available in the makerspace context.", k: ["electronics", "circuits", "embedded"] },
+  { q: "Do you support defense-focused topics?", a: "Programs align with EDGE domains, including secure systems, autonomy, and ruggedized deployments.", k: ["defense", "aerospace", "secure systems"] },
+  { q: "How do I contact the team?", a: "Use the contact options on the EDGE Learning & Innovation Factory site or reach out through your EDGE representative.", k: ["contact", "email", "reach", "phone"] },
+  { q: "Do you run innovation sprints?", a: "Yes. Design sprints and rapid prototyping sessions can be scheduled for internal or partner teams.", k: ["design sprint", "innovation sprint", "rapid prototype"] },
+  { q: "Do you help with digital transformation?", a: "Yes. Advisory and training for digital transformation roadmaps, capability building, and pilot execution.", k: ["digital transformation", "roadmap", "capability"] },
+  { q: "Do you cover supply chain topics?", a: "Select modules address smart manufacturing, logistics visibility, and asset tracking.", k: ["supply chain", "logistics", "tracking"] },
+  { q: "Do you offer mentorship?", a: "Mentors from EDGE and partner experts guide projects and capstones during programs.", k: ["mentor", "mentorship", "guidance"] },
+  { q: "Is there a demo day?", a: "Some cohorts end with demos to stakeholders to showcase prototypes or project outcomes.", k: ["demo", "showcase", "presentation"] },
+  { q: "Can I book the space for events?", a: "Space use is prioritized for training; special events can be arranged on approval.", k: ["book space", "event", "room"] },
+  { q: "Do you teach PLCs and industrial controls?", a: "Yes. PLC programming, industrial networking, and controls integration are part of automation tracks.", k: ["plc", "controls", "industrial network"] },
+  { q: "Do you cover sustainability topics?", a: "Energy efficiency and sustainable operations can be included depending on cohort objectives.", k: ["sustainability", "energy", "green"] },
+  { q: "Do you offer assessments?", a: "Skills assessments and readiness diagnostics can be included at the start/end of programs.", k: ["assessment", "diagnostic", "skills"] },
+  { q: "Can we integrate our data?", a: "Yes, with prior review for security and privacy. Synthetic or sanitized datasets are recommended.", k: ["own data", "data integration", "upload data"] },
+  { q: "Do you offer scholarships?", a: "Scholarships are not standard; organizational sponsorships are more common. Inquire for current options.", k: ["scholarship", "funding", "sponsor"] },
+  { q: "Is there parking?", a: "Visitor parking is available at the facility. Confirm details when scheduling a visit.", k: ["parking", "car"] },
+  { q: "Do you run youth programs?", a: "Main focus is professional/industry tracks; youth or outreach programs can be arranged occasionally.", k: ["youth", "school", "k12", "students"] },
+  { q: "Do you offer compliance training?", a: "Compliance and standards awareness (e.g., safety, quality) can be embedded as needed.", k: ["compliance", "standards", "quality"] },
+  { q: "Do you teach human factors or UX?", a: "Human factors and UX for industrial interfaces can be integrated for relevant cohorts.", k: ["ux", "human factors", "interface"] },
+  { q: "Do you help with onboarding new hires?", a: "Yes. Cohorts can be structured as onboarding bootcamps for new technical hires.", k: ["onboarding", "new hires", "orientation"] },
+  { q: "Is there post-program support?", a: "Follow-up clinics, office hours, and refreshers can be scheduled after main programs.", k: ["follow up", "support", "office hours"] },
+  { q: "Do you measure outcomes?", a: "KPIs and competency assessments can be defined with your team to measure training outcomes.", k: ["outcomes", "kpi", "measure"] },
+  { q: "Do you cover change management?", a: "Yes. Leadership modules include change management for tech adoption.", k: ["change management", "adoption"] },
+  { q: "How do I get a brochure?", a: "Request a program overview/brochure through the contact form or your EDGE representative.", k: ["brochure", "overview", "pdf"] }
+];
 
 // Mic support
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -521,83 +590,28 @@ function setStatus(text) {
   if (statusEl) statusEl.textContent = text || "";
 }
 
-function getStoredApiKey() {
-  try {
-    return (localStorage.getItem(API_KEY_STORAGE_KEY) || "").trim();
-  } catch {
-    return "";
-  }
-}
+// --- Local FAQ engine ---
+function findBestFaqAnswer(userMessage) {
+  const text = (userMessage || "").toLowerCase();
+  if (!text.trim()) return "";
 
-function saveApiKey(key) {
-  const clean = (key || "").trim();
-  if (!clean) return "";
-  try {
-    localStorage.setItem(API_KEY_STORAGE_KEY, clean);
-  } catch {
-    // ignore storage issues (private mode, etc.)
-  }
-  return clean;
-}
-
-function isLikelyApiKey(key) {
-  return /^sk-[A-Za-z0-9-_]{20,}$/.test(key || "");
-}
-
-async function getApiKeyOrPrompt() {
-  const inline = (OPENAI_API_KEY || "").trim();
-  const cached = getStoredApiKey();
-  const candidate = inline || cached;
-
-  if (isLikelyApiKey(candidate)) {
-    if (candidate !== cached) saveApiKey(candidate);
-    return candidate;
-  }
-
-  throw new Error("Add a valid OPENAI_API_KEY in your .env file to use the guide.");
-}
-
-// --- OpenAI Chat API helper ---
-async function callOpenAI(systemPrompt, userMessage) {
-  const apiKey = await getApiKeyOrPrompt();
-  if (!apiKey) {
-    throw new Error("Missing OPENAI_API_KEY. Add it in app.js.");
-  }
-  try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-        temperature: 0.5,
-      }),
+  let best = { score: 0, answer: "" };
+  FAQS.forEach((item) => {
+    let score = 0;
+    item.k.forEach((kw) => {
+      if (text.includes(kw)) score += 2;
     });
+    if (item.q.toLowerCase().includes(text)) score += 1; // rough similarity boost
+    if (score > best.score) best = { score, answer: item.a };
+  });
 
-    if (!response.ok) {
-      const errText = await response.text().catch(() => "");
-      const message = errText || response.statusText || "Unknown error";
-      throw new Error(`OpenAI error: ${response.status} - ${message}`);
-    }
+  return best.score > 0 ? best.answer : "";
+}
 
-    const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content?.trim?.();
-    if (!content) {
-      throw new Error("OpenAI returned an empty response.");
-    }
-    return content;
-  } catch (err) {
-    if (err.message && err.message.includes("Failed to fetch")) {
-      throw new Error("Could not reach OpenAI. Check your network or browser CORS setup.");
-    }
-    throw err;
-  }
+async function callOpenAI(systemPrompt, userMessage) {
+  const answer = findBestFaqAnswer(userMessage);
+  if (answer) return answer;
+  return "I don't have that in my local notes yet. Ask about EDGE Learning & Innovation Factory programs, labs, visits, or training options.";
 }
 
 // =======================
