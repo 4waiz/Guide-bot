@@ -13,6 +13,7 @@ const envApiKey =
   (typeof window !== "undefined" && window?.EDGE_GUIDE_OPENAI_KEY) ||
   "";
 const OPENAI_API_KEY = (envApiKey || "").trim(); // optional inline fallback; leave blank to be prompted
+const envFileApiKeyPromise = loadEnvApiKeyFromFile();
 const API_KEY_STORAGE_KEY = "edge-guide-openai-key";
 const AVATAR_BASE_PATH = "./avatar/avatar/models/";
 const AVATARS = [
@@ -528,6 +529,22 @@ function setStatus(text) {
   if (statusEl) statusEl.textContent = text || "";
 }
 
+async function loadEnvApiKeyFromFile() {
+  try {
+    const res = await fetch("./.env", { cache: "no-store" });
+    if (!res.ok) return "";
+    const text = await res.text();
+    const match = text.match(/^\s*OPENAI_API_KEY\s*=\s*(.+)\s*$/m);
+    if (!match) return "";
+    const raw = match[1].trim().replace(/^['"]|['"]$/g, "");
+    const clean = raw.split("#")[0].trim();
+    return isLikelyApiKey(clean) ? clean : "";
+  } catch (err) {
+    console.warn("Unable to read .env for API key", err);
+    return "";
+  }
+}
+
 function getStoredApiKey() {
   try {
     return (localStorage.getItem(API_KEY_STORAGE_KEY) || "").trim();
@@ -551,21 +568,25 @@ function isLikelyApiKey(key) {
   return /^sk-[A-Za-z0-9-_]{20,}$/.test(key || "");
 }
 
-function getApiKeyOrPrompt() {
+async function getApiKeyOrPrompt() {
+  const envFileKey = await envFileApiKeyPromise;
   const inline = (OPENAI_API_KEY || "").trim();
   const cached = getStoredApiKey();
-  const candidate = cached || inline;
-  if (isLikelyApiKey(candidate)) return candidate;
+  const candidate = envFileKey || inline || cached;
 
-  const entered = window.prompt("Enter your OpenAI API key (kept in this browser only):", "") || "";
-  return isLikelyApiKey(entered) ? saveApiKey(entered) : "";
+  if (isLikelyApiKey(candidate)) {
+    if (candidate !== cached) saveApiKey(candidate);
+    return candidate;
+  }
+
+  throw new Error("Add a valid OPENAI_API_KEY in your .env file to use the guide.");
 }
 
 // --- OpenAI Chat API helper ---
 async function callOpenAI(systemPrompt, userMessage) {
-  const apiKey = getApiKeyOrPrompt();
+  const apiKey = await getApiKeyOrPrompt();
   if (!apiKey) {
-    throw new Error("Add a valid OpenAI API key to use the guide.");
+    throw new Error("Add a valid OPENAI_API_KEY in your .env file to use the guide.");
   }
 
   try {
