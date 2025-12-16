@@ -591,6 +591,30 @@ function setStatus(text) {
 }
 
 // --- Local FAQ engine ---
+function getSmallTalkAnswer(userMessage) {
+  const txt = (userMessage || "").toLowerCase().trim();
+  if (!txt) return "";
+
+  const greetings = ["hello", "hi", "hey", "salam", "good morning", "good evening"];
+  if (greetings.some((g) => txt.startsWith(g) || txt.includes(` ${g}`))) {
+    return "Hi there! I am the EDGE guide. Ask me about the Learning & Innovation Factory programs, labs, or visits.";
+  }
+
+  if (txt.includes("how are you")) {
+    return "I am doing great and ready to help you learn about the EDGE Learning & Innovation Factory.";
+  }
+
+  if (txt.includes("who are you") || txt.includes("what are you")) {
+    return "I am the EDGE Learning & Innovation Factory guide. I can tell you about programs, labs, visits, and training options.";
+  }
+
+  if (txt.includes("thank")) {
+    return "You are welcome! Let me know if you want details on programs, labs, or visits.";
+  }
+
+  return "";
+}
+
 function findBestFaqAnswer(userMessage) {
   const text = (userMessage || "").toLowerCase();
   if (!text.trim()) return "";
@@ -609,6 +633,9 @@ function findBestFaqAnswer(userMessage) {
 }
 
 async function callOpenAI(systemPrompt, userMessage) {
+  const smallTalk = getSmallTalkAnswer(userMessage);
+  if (smallTalk) return smallTalk;
+
   const answer = findBestFaqAnswer(userMessage);
   if (answer) return answer;
   return "I don't have that in my local notes yet. Ask about EDGE Learning & Innovation Factory programs, labs, visits, or training options.";
@@ -870,7 +897,60 @@ function selectVoiceForAvatar(avatarId) {
   if (!avatar || !availableVoices.length) return;
 
   const gender = avatar.gender || "neutral";
-  const preferredByGender = {
+  const avatarVoiceMap = {
+    muhammad: [
+      "Microsoft Naayf Online (Natural) - Arabic (Saudi Arabia)",
+      "Microsoft Hamed Online (Natural) - Arabic (Saudi Arabia)",
+      "Microsoft Guy Online (Natural) - English (United States)"
+    ],
+    anna: [
+      "Microsoft Aria Online (Natural) - English (United States)",
+      "Microsoft Jenny Online (Natural) - English (United States)",
+      "Google UK English Female"
+    ],
+    aki: [
+      "Google US English",
+      "Microsoft Aria Online (Natural) - English (United States)"
+    ],
+    amari: [
+      "Microsoft Aria Online (Natural) - English (United States)",
+      "Microsoft Jenny Online (Natural) - English (United States)"
+    ],
+    leo: [
+      "Microsoft Guy Online (Natural) - English (United States)",
+      "Microsoft Ryan Online (Natural) - English (United States)"
+    ],
+    maya: [
+      "Google UK English Female",
+      "Microsoft Jenny Online (Natural) - English (United States)"
+    ],
+    rose: [
+      "Google UK English Female",
+      "Microsoft Aria Online (Natural) - English (United States)"
+    ],
+    shonith: [
+      "Google UK English Male",
+      "Microsoft Ryan Online (Natural) - English (United States)"
+    ],
+    tom: [
+      "Microsoft Guy Online (Natural) - English (United States)",
+      "Google US English"
+    ],
+    wei: [
+      "Google US English",
+      "Microsoft Jenny Online (Natural) - English (United States)"
+    ],
+    zara: [
+      "Microsoft Jenny Online (Natural) - English (United States)",
+      "Google UK English Female"
+    ],
+    zola: [
+      "Google US English",
+      "Microsoft Aria Online (Natural) - English (United States)"
+    ]
+  };
+
+  const genderFallback = {
     female: [
       "Microsoft Aria Online (Natural) - English (United States)",
       "Microsoft Jenny Online (Natural) - English (United States)",
@@ -887,7 +967,7 @@ function selectVoiceForAvatar(avatarId) {
     neutral: []
   };
 
-  const names = preferredByGender[gender] || preferredByGender.neutral;
+  const names = avatarVoiceMap[avatar.id] || genderFallback[gender] || genderFallback.neutral;
   preferredVoice =
     availableVoices.find((v) => names.includes(v.name)) ||
     availableVoices.find((v) => v.lang && v.lang.toLowerCase().startsWith("en")) ||
