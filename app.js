@@ -167,7 +167,7 @@ function initAvatar() {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(avatarContainer.clientWidth, avatarContainer.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   avatarContainer.appendChild(renderer.domElement);
 
   const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
@@ -1216,34 +1216,6 @@ async function loadFaqsFromJson() {
     }
 
     FAQS = combined;
-    faqsLoaded = true;
-    return FAQS;
-  } catch (err) {
-    faqsLoaded = true;
-    FAQS = [];
-    throw err;
-  }
-}
-
-async function ensureFaqsLoaded() {
-  if (faqsLoaded) return FAQS;
-  if (!faqsLoadPromise) {
-    faqsLoadPromise = loadFaqsFromJson();
-  }
-  try {
-    await faqsLoadPromise;
-  } catch (err) {
-    console.error("Failed to load FAQs:", err);
-  }
-  return FAQS;
-}
-
-async function loadFaqsFromJson() {
-  try {
-    const resp = await fetch("./faqs.json", { cache: "no-cache" });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
-    FAQS = Array.isArray(data) ? data : [];
     faqsLoaded = true;
     return FAQS;
   } catch (err) {

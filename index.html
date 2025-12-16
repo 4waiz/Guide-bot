@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link rel="preconnect" href="https://unpkg.com">
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 
   <script type="importmap">
@@ -38,11 +39,14 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
+      min-height: 100%;
       height: 100%;
       font-family: "Manrope", sans-serif;
       background: var(--bg-gradient);
       color: var(--text-main);
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
 
     #root {
@@ -51,22 +55,22 @@
       height: 100%;
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
+      padding: clamp(6px, 2vw, 14px) clamp(12px, 3vw, 24px) clamp(10px, 3vw, 20px);
     }
 
     #app {
       width: 100%;
-      max-width: 600px;
-      height: 100%;
-      /* Allow height to grow but keep it centered */
-      max-height: 1200px;
+      max-width: 560px;
+      min-height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      gap: 18px;
-      padding: 24px 20px 32px;
+      gap: clamp(12px, 3vw, 20px);
+      padding: clamp(14px, 3vw, 24px);
       position: relative;
+      margin: 0 auto;
     }
 
     /* --- TOP BUTTONS (Orange Glossy) --- */
@@ -75,7 +79,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 20px;
+      padding: 6px 16px;
       z-index: 20;
       flex-shrink: 0;
     }
@@ -125,36 +129,28 @@
       position: relative;
       z-index: 5;
       /* Removed negative margin to prevent overlap */
-      margin: 10px 0; 
+      margin: clamp(4px, 1.5vw, 10px) 0; 
+      min-height: clamp(240px, 54vw, 420px);
     }
 
     #avatar-container {
       position: relative;
       /* Large size */
-      width: 420px;
-      height: 420px;
+      width: clamp(220px, 64vw, 360px);
+      height: clamp(220px, 64vw, 360px);
       border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #f8fafc, #cbd5e1);
+      background: radial-gradient(circle at 35% 35%, #f9fbff, #d7dfe8 70%, #c8d1db 100%);
       box-shadow: 
-        -15px -15px 30px rgba(255,255,255,1),
-        20px 20px 50px rgba(0,0,0,0.2),
-        inset 0 0 0 2px rgba(255,255,255,0.3);
+        -14px -14px 30px rgba(255,255,255,0.85),
+        18px 18px 40px rgba(0,0,0,0.18),
+        inset 0 2px 12px rgba(255,255,255,0.75),
+        inset 0 -6px 14px rgba(0,0,0,0.08);
       overflow: hidden;
       /* Flex shrink ensures it scales down on smaller screens instead of overflowing */
       flex-shrink: 1; 
     }
 
     /* Reflection */
-    #avatar-container::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      background: radial-gradient(circle at 50% 5%, rgba(255,255,255,0.8) 0%, transparent 55%);
-      pointer-events: none;
-      z-index: 10;
-    }
-
     #avatar-container canvas { display: block; width: 100%; height: 100%; }
 
     #avatar-loading {
@@ -169,14 +165,14 @@
 
     /* --- CAROUSEL (No Overlap) --- */
     #avatar-picker-carousel {
-      width: 130%;
+      width: 100%;
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      gap: 20px;
+      gap: clamp(10px, 3vw, 24px);
       /* Positive margin to create GAP */
       margin-top: 10px; 
-      margin-bottom: 20px;
+      margin-bottom: clamp(12px, 3vw, 24px);
       position: relative;
       z-index: 10;
       flex-shrink: 0;
@@ -203,10 +199,10 @@
     .nav-arrow:hover { background: #fff; transform: scale(1.1); color: var(--orange-mid); }
 
     .avatar-thumbnails-container {
-      flex: 0 1 400px;
+      flex: 0 1 340px;
       overflow-x: auto;
       scrollbar-width: none;
-      padding: 20px 10px 10px 10px;
+      padding: 16px 8px 8px 8px;
       mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
       -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
     }
@@ -214,14 +210,14 @@
 
     .avatar-thumbnails {
       display: flex;
-      gap: 15px;
-      padding: 0 20px;
+      gap: 12px;
+      padding: 0 14px;
       align-items: flex-end;
     }
 
     .avatar-thumb {
-      width: 60px;
-      height: 60px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       border: 3px solid white;
       background: #e2e8f0;
@@ -243,8 +239,8 @@
 
     /* Selected State - Pops up slightly, but no overlap with main sphere */
     .avatar-thumb.selected {
-      width: 80px; 
-      height: 80px;
+      width: 68px; 
+      height: 68px;
       border-color: #fff;
       box-shadow: 
         0 0 0 4px var(--orange-mid),
@@ -268,14 +264,15 @@
       border: 1px solid rgba(255,255,255,0.8);
       border-radius: 32px;
       box-shadow: var(--shadow-deep);
-      padding: 24px 28px;
+      padding: clamp(16px, 3vw, 28px);
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: clamp(10px, 2.5vw, 16px);
       position: relative;
-      margin-bottom: 20px;
+      margin-bottom: clamp(10px, 2.5vw, 20px);
       z-index: 30;
       flex-shrink: 0;
+      align-self: stretch;
     }
 
     #output {
@@ -472,16 +469,21 @@
 
     @media (max-width: 600px) {
       /* Mobile layout tweaks */
-      #avatar-container { width: 85vw; height: 85vw; }
+      #avatar-container { width: 78vw; height: 78vw; }
       .glassy-btn-orange { min-width: 100px; height: 42px; font-size: 0.8rem; }
-      .nav-arrow { width: 40px; height: 40px; margin-bottom: 30px; }
+      .nav-arrow { width: 40px; height: 40px; margin-bottom: 24px; }
       /* Reduce gap slightly on small screens */
-      #avatar-picker-carousel { margin-top: 5px; } 
+      #avatar-picker-carousel { margin-top: 5px; gap: 12px; } 
+      #hud { border-radius: 24px; }
+      #output { font-size: 0.98rem; }
+      #status-row { font-size: 0.8rem; }
+      #app { gap: 14px; padding: 18px 14px 22px; }
+      #input-modal .input-card { width: min(520px, 96vw); padding: 22px; }
     }
     
     /* Ensure responsiveness for short screens */
     @media (max-height: 800px) {
-      #avatar-container { width: 320px; height: 320px; }
+      #avatar-container { width: clamp(240px, 60vw, 320px); height: clamp(240px, 60vw, 320px); }
       #avatar-picker-carousel { margin-top: 5px; }
       .avatar-thumb.selected { width: 70px; height: 70px; }
       .nav-arrow { margin-bottom: 30px; }
@@ -517,18 +519,18 @@
         <div class="avatar-thumbnails-container">
           <div class="avatar-thumbnails" id="avatar-thumbnails">
             <!-- Data attributes for JS -->
-            <div class="avatar-thumb selected" data-avatar="muhammad"><img src="./avatar/avatar/images/muhammad.png"></div>
-            <div class="avatar-thumb" data-avatar="anna"><img src="./avatar/avatar/images/anna.png"></div>
-            <div class="avatar-thumb" data-avatar="aki"><img src="./avatar/avatar/images/aki.png"></div>
-            <div class="avatar-thumb" data-avatar="amari"><img src="./avatar/avatar/images/amari.png"></div>
-            <div class="avatar-thumb" data-avatar="leo"><img src="./avatar/avatar/images/leo.png"></div>
-            <div class="avatar-thumb" data-avatar="maya"><img src="./avatar/avatar/images/maya.png"></div>
-            <div class="avatar-thumb" data-avatar="rose"><img src="./avatar/avatar/images/rose.png"></div>
-            <div class="avatar-thumb" data-avatar="shonith"><img src="./avatar/avatar/images/shonith.png"></div>
-            <div class="avatar-thumb" data-avatar="tom"><img src="./avatar/avatar/images/tom.png"></div>
-            <div class="avatar-thumb" data-avatar="wei"><img src="./avatar/avatar/images/wei.png"></div>
-            <div class="avatar-thumb" data-avatar="zara"><img src="./avatar/avatar/images/zara.png"></div>
-            <div class="avatar-thumb" data-avatar="zola"><img src="./avatar/avatar/images/zola.png"></div>
+            <div class="avatar-thumb selected" data-avatar="muhammad"><img src="./avatar/avatar/images/muhammad.png" loading="eager" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="anna"><img src="./avatar/avatar/images/anna.png" loading="lazy" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="aki"><img src="./avatar/avatar/images/aki.png" loading="lazy" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="amari"><img src="./avatar/avatar/images/amari.png" loading="lazy" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="leo"><img src="./avatar/avatar/images/leo.png" loading="lazy" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="maya"><img src="./avatar/avatar/images/maya.png" loading="lazy" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="rose"><img src="./avatar/avatar/images/rose.png" loading="lazy" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="shonith"><img src="./avatar/avatar/images/shonith.png" loading="lazy" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="tom"><img src="./avatar/avatar/images/tom.png" loading="lazy" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="wei"><img src="./avatar/avatar/images/wei.png" loading="lazy" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="zara"><img src="./avatar/avatar/images/zara.png" loading="lazy" decoding="async"></div>
+            <div class="avatar-thumb" data-avatar="zola"><img src="./avatar/avatar/images/zola.png" loading="lazy" decoding="async"></div>
           </div>
         </div>
 
