@@ -133,6 +133,7 @@ let currentUtterance = null;
 let preferredVoice = null;
 let availableVoices = [];
 let retryListenTimeout = null;
+let audioUnlocked = false;
 
 // =======================
 //  INIT
@@ -495,8 +496,14 @@ function setupAvatarPicker() {
 function setupButtons() {
   if (!btnSpeak || !btnPaths) return;
 
-  btnSpeak.addEventListener("click", () => handleInteraction("speak"));
-  btnPaths.addEventListener("click", () => handleInteraction("paths"));
+  btnSpeak.addEventListener("click", () => {
+    unlockAudioForIOS();
+    handleInteraction("speak");
+  });
+  btnPaths.addEventListener("click", () => {
+    unlockAudioForIOS();
+    handleInteraction("paths");
+  });
 
   if (stopSpeechBtn) {
     stopSpeechBtn.addEventListener("click", stopSpeaking);
@@ -950,6 +957,19 @@ function getInputCopy(kind) {
 // =======================
 //  SPEECH / LIP SYNC
 // =======================
+
+// iOS/Safari requires audio to be "unlocked" by a user gesture
+function unlockAudioForIOS() {
+  if (audioUnlocked || !window.speechSynthesis) return;
+
+  // Create a silent utterance to unlock audio
+  const silence = new SpeechSynthesisUtterance("");
+  silence.volume = 0;
+  silence.rate = 10; // Fast so it's instant
+  window.speechSynthesis.speak(silence);
+  audioUnlocked = true;
+}
+
 function speakText(text) {
   return new Promise((resolve) => {
     if (!window.speechSynthesis) {
@@ -958,11 +978,22 @@ function speakText(text) {
       return resolve();
     }
 
+    // Ensure audio is unlocked on iOS
+    unlockAudioForIOS();
+
     if (currentUtterance) {
       window.speechSynthesis.cancel();
       currentUtterance = null;
     }
 
+    // iOS workaround: small delay after cancel
+    setTimeout(() => {
+      actuallySpeak(text, resolve);
+    }, 100);
+  });
+}
+
+function actuallySpeak(text, resolve) {
     const utterance = new SpeechSynthesisUtterance(text);
     currentUtterance = utterance;
     const voice = preferredVoice || null;
@@ -1009,7 +1040,6 @@ function speakText(text) {
 
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
-  });
 }
 
 function stopSpeaking() {
