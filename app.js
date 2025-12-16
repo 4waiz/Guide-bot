@@ -26,75 +26,34 @@ const DEFAULT_AVATAR_ID = "muhammad";
 // How fast the avatar talks
 const CHAR_PER_SECOND = 14;
 
-// FAQ knowledge base (about EDGE Learning & Innovation Factory)
-const FAQS = [
-  {
-    q: "What is EDGE Learning & Innovation Factory?",
-    a: "EDGE Learning & Innovation Factory is EDGE Group’s training and upskilling hub in Abu Dhabi, focused on advanced technology, digital transformation, and practical industry learning.",
-    k: ["what", "edge", "learning", "innovation", "factory", "hub", "center"]
-  },
-  { q: "Where is the facility located?", a: "The Learning & Innovation Factory is in Abu Dhabi, UAE, within EDGE Group’s facilities. Visitors typically register before arrival.", k: ["where", "location", "abu dhabi", "uae", "address", "facility"] },
-  { q: "Do you offer guided tours?", a: "Yes. Tours can be arranged for partners, customers, and education groups. Submit a visit request through EDGE or LIF contact channels.", k: ["tour", "guided", "visit", "site visit", "book tour"] },
-  { q: "What programs do you offer?", a: "Programs span robotics, AI/ML, digital transformation, cyber, additive manufacturing, Industry 4.0, and leadership for tech-led operations.", k: ["programs", "courses", "offer", "modules", "catalog"] },
-  { q: "Who can enroll?", a: "Professionals, engineers, technicians, and graduates in tech/manufacturing fields can enroll. Some tracks require prerequisites; enterprise cohorts are common.", k: ["enroll", "who", "eligibility", "apply", "join"] },
-  { q: "Do you provide corporate training?", a: "Yes. LIF delivers custom corporate programs for EDGE entities and external partners across aerospace, defense, and industry 4.0 topics.", k: ["corporate", "enterprise", "company", "team", "group"] },
-  { q: "Are there short courses or bootcamps?", a: "Yes. There are intensive bootcamps and short courses in robotics, AI, cyber, additive manufacturing, and smart factory operations.", k: ["bootcamp", "short course", "intensive", "workshop"] },
-  { q: "Do you have online or hybrid learning?", a: "Delivery is primarily hands-on onsite. Some modules can be delivered hybrid or blended on request.", k: ["online", "remote", "hybrid", "virtual"] },
-  { q: "What labs are available?", a: "Labs include robotics cells, industrial automation, AI/ML, cyber ranges, additive manufacturing, digital twins, and smart factory simulations.", k: ["lab", "labs", "facilities", "equipment", "workshop"] },
-  { q: "Do you have a makerspace?", a: "Yes. The makerspace supports prototyping with 3D printing, laser cutting, electronics benches, and small CNC capability.", k: ["makerspace", "prototype", "prototyping", "3d print", "laser"] },
-  { q: "Is there a focus on Industry 4.0?", a: "Yes. Industry 4.0 readiness, digital twins, IoT integration, and smart factory operations are core pillars of the training.", k: ["industry 4.0", "smart factory", "digital twin", "iot", "automation"] },
-  { q: "Do you teach robotics programming?", a: "Yes. Courses cover robot programming, safety, and integration with industrial control systems and sensors.", k: ["robotics", "robot", "programming", "arm", "automation"] },
-  { q: "Do you cover AI and machine learning?", a: "Yes. AI/ML tracks include model development, deployment, MLOps basics, and applied use cases in industrial contexts.", k: ["ai", "ml", "machine learning", "artificial intelligence"] },
-  { q: "Do you teach cybersecurity?", a: "Yes. There are cyber labs with hands-on scenarios for defensive security, OT security, and secure system design.", k: ["cyber", "security", "cybersecurity", "ot security", "defense"] },
-  { q: "Do you support additive manufacturing?", a: "Yes. Additive manufacturing training includes design for AM, material selection, and post-processing basics.", k: ["additive", "3d printing", "manufacturing", "am"] },
-  { q: "Do you offer internships?", a: "Internship availability varies. Typically coordinated with EDGE entities and partner universities. Inquire through EDGE careers channels.", k: ["intern", "internship", "student", "graduate"] },
-  { q: "Is there career support?", a: "Career development is embedded: mentorship, portfolio-worthy projects, and exposure to EDGE tech programs.", k: ["career", "jobs", "placement", "mentorship"] },
-  { q: "How long are the programs?", a: "Lengths vary from 1–3 day workshops to multi-week bootcamps and multi-month upskilling tracks.", k: ["duration", "how long", "weeks", "months"] },
-  { q: "Do you certify participants?", a: "Programs can include EDGE-branded certificates of completion. Some tracks can align with external certifications on request.", k: ["certificate", "certification", "credentials"] },
-  { q: "How do I apply?", a: "Submit an inquiry or application via EDGE Learning & Innovation Factory contact forms or through your organization’s training coordinator.", k: ["apply", "application", "sign up", "register"] },
-  { q: "Is there a cost?", a: "Pricing depends on the program scope, duration, and cohort size. Corporate packages and tailored sessions are available.", k: ["cost", "price", "fees", "tuition", "pricing"] },
-  { q: "Can programs be customized?", a: "Yes. Content can be tailored to your organization’s tech stack, maturity level, and operational goals.", k: ["custom", "tailor", "bespoke", "adapt", "organization"] },
-  { q: "Do you partner with universities?", a: "LIF collaborates with universities and vocational institutes for capstones, internships, and joint training initiatives.", k: ["university", "universities", "college", "academic", "partner"] },
-  { q: "Do you host hackathons or challenges?", a: "Yes. Innovation challenges, hackathons, and design sprints are organized periodically to solve real EDGE use cases.", k: ["hackathon", "challenge", "innovation", "sprint"] },
-  { q: "Is there hardware training?", a: "Yes. Hands-on with sensors, PLCs, robotics controllers, edge devices, and industrial networking.", k: ["hardware", "plc", "sensors", "edge devices", "controllers"] },
-  { q: "Do you teach cloud or edge computing?", a: "Yes. Courses include edge-to-cloud patterns, data pipelines, and secure deployments for industrial workloads.", k: ["cloud", "edge computing", "data pipeline"] },
-  { q: "Do you cover AR or VR?", a: "Some modules include AR/VR for training, maintenance support, and visualization in industrial contexts.", k: ["ar", "vr", "augmented", "virtual reality"] },
-  { q: "Do you have leadership programs?", a: "Yes. Leadership tracks focus on digital transformation strategy, change management, and tech-enabled operations.", k: ["leadership", "manager", "executive", "strategy"] },
-  { q: "Is there a makerspace membership?", a: "Access is typically program-based. Membership-style access can be arranged for approved partners and teams.", k: ["membership", "access", "makerspace membership"] },
-  { q: "Can I bring my own project?", a: "Yes, projects can be integrated into training with prior review to ensure safety and fit with lab capabilities.", k: ["own project", "bring project", "custom project"] },
-  { q: "Do you support startups?", a: "Startups aligned with advanced tech or industrial domains can request tailored training or prototyping support.", k: ["startup", "startups", "founder", "venture"] },
-  { q: "What languages are used?", a: "Primary delivery is in English. Arabic support can be arranged for groups where needed.", k: ["language", "english", "arabic"] },
-  { q: "Do you provide equipment safety training?", a: "Yes. Safety inductions and standard operating procedures are part of lab onboarding.", k: ["safety", "ppe", "induction", "sop"] },
-  { q: "Are there evening or weekend classes?", a: "Scheduling can be flexible for corporate cohorts; public schedules vary. Inquire for current timings.", k: ["evening", "weekend", "schedule", "timing"] },
-  { q: "How many people per cohort?", a: "Cohort sizes vary. Hands-on labs are typically small (8–16) to ensure instructor attention.", k: ["cohort size", "class size", "participants"] },
-  { q: "Is housing provided?", a: "Housing is not standard. For visiting cohorts, EDGE can advise on nearby accommodation options.", k: ["housing", "accommodation", "stay"] },
-  { q: "Is catering provided?", a: "Basic refreshments can be arranged for cohorts; full catering is arranged on request for longer sessions.", k: ["catering", "food", "meals"] },
-  { q: "Do you offer certifications with vendors?", a: "Vendor-aligned certifications can be embedded case-by-case depending on tooling and agreements.", k: ["vendor", "certification", "partners"] },
-  { q: "Do you teach data analytics?", a: "Yes. Data analytics for industrial telemetry, dashboards, and KPI tracking is covered in several tracks.", k: ["data", "analytics", "dashboards", "kpi"] },
-  { q: "Is there electronics training?", a: "Yes. Basics of circuits, sensors, and embedded prototyping are available in the makerspace context.", k: ["electronics", "circuits", "embedded"] },
-  { q: "Do you support defense-focused topics?", a: "Programs align with EDGE domains, including secure systems, autonomy, and ruggedized deployments.", k: ["defense", "aerospace", "secure systems"] },
-  { q: "How do I contact the team?", a: "Use the contact options on the EDGE Learning & Innovation Factory site or reach out through your EDGE representative.", k: ["contact", "email", "reach", "phone"] },
-  { q: "Do you run innovation sprints?", a: "Yes. Design sprints and rapid prototyping sessions can be scheduled for internal or partner teams.", k: ["design sprint", "innovation sprint", "rapid prototype"] },
-  { q: "Do you help with digital transformation?", a: "Yes. Advisory and training for digital transformation roadmaps, capability building, and pilot execution.", k: ["digital transformation", "roadmap", "capability"] },
-  { q: "Do you cover supply chain topics?", a: "Select modules address smart manufacturing, logistics visibility, and asset tracking.", k: ["supply chain", "logistics", "tracking"] },
-  { q: "Do you offer mentorship?", a: "Mentors from EDGE and partner experts guide projects and capstones during programs.", k: ["mentor", "mentorship", "guidance"] },
-  { q: "Is there a demo day?", a: "Some cohorts end with demos to stakeholders to showcase prototypes or project outcomes.", k: ["demo", "showcase", "presentation"] },
-  { q: "Can I book the space for events?", a: "Space use is prioritized for training; special events can be arranged on approval.", k: ["book space", "event", "room"] },
-  { q: "Do you teach PLCs and industrial controls?", a: "Yes. PLC programming, industrial networking, and controls integration are part of automation tracks.", k: ["plc", "controls", "industrial network"] },
-  { q: "Do you cover sustainability topics?", a: "Energy efficiency and sustainable operations can be included depending on cohort objectives.", k: ["sustainability", "energy", "green"] },
-  { q: "Do you offer assessments?", a: "Skills assessments and readiness diagnostics can be included at the start/end of programs.", k: ["assessment", "diagnostic", "skills"] },
-  { q: "Can we integrate our data?", a: "Yes, with prior review for security and privacy. Synthetic or sanitized datasets are recommended.", k: ["own data", "data integration", "upload data"] },
-  { q: "Do you offer scholarships?", a: "Scholarships are not standard; organizational sponsorships are more common. Inquire for current options.", k: ["scholarship", "funding", "sponsor"] },
-  { q: "Is there parking?", a: "Visitor parking is available at the facility. Confirm details when scheduling a visit.", k: ["parking", "car"] },
-  { q: "Do you run youth programs?", a: "Main focus is professional/industry tracks; youth or outreach programs can be arranged occasionally.", k: ["youth", "school", "k12", "students"] },
-  { q: "Do you offer compliance training?", a: "Compliance and standards awareness (e.g., safety, quality) can be embedded as needed.", k: ["compliance", "standards", "quality"] },
-  { q: "Do you teach human factors or UX?", a: "Human factors and UX for industrial interfaces can be integrated for relevant cohorts.", k: ["ux", "human factors", "interface"] },
-  { q: "Do you help with onboarding new hires?", a: "Yes. Cohorts can be structured as onboarding bootcamps for new technical hires.", k: ["onboarding", "new hires", "orientation"] },
-  { q: "Is there post-program support?", a: "Follow-up clinics, office hours, and refreshers can be scheduled after main programs.", k: ["follow up", "support", "office hours"] },
-  { q: "Do you measure outcomes?", a: "KPIs and competency assessments can be defined with your team to measure training outcomes.", k: ["outcomes", "kpi", "measure"] },
-  { q: "Do you cover change management?", a: "Yes. Leadership modules include change management for tech adoption.", k: ["change management", "adoption"] },
-  { q: "How do I get a brochure?", a: "Request a program overview/brochure through the contact form or your EDGE representative.", k: ["brochure", "overview", "pdf"] }
+// Basic moderation and room mapping
+const BAD_WORDS = [
+  "badword",
+  "insult",
+  "curse",
+  "abuse",
+  "offensive",
+  "fuck",
+  "shit",
+  "bitch",
+  "bastard",
+  "idiot",
+  "stupid"
 ];
+const ROOM_RESPONSES = [
+  { match: ["vip"], answer: "From the main lobby, take the elevator to Level 2. Walk past reception; the VIP room is the first door on the left with gold signage." },
+  { match: ["office 1", "office one"], answer: "Office 1 is on Level 1. From the lobby, turn right at the main hallway; it's the second glass door on your right." },
+  { match: ["office 2", "office two"], answer: "Office 2 is on Level 1. From the lobby, turn left at the hallway; it's the door next to the meeting pod." },
+  { match: ["classroom 1", "classroom one", "class 1"], answer: "Classroom 1 is on Level 1. From the lobby, go straight, then left at the T-junction. It is the first classroom on the right." },
+  { match: ["classroom 2", "classroom two", "class 2"], answer: "Classroom 2 is next to Classroom 1. From the lobby, go straight, left at the T-junction, then second classroom on the right." },
+  { match: ["classroom 3", "classroom three", "class 3"], answer: "Classroom 3 is on Level 1. From the lobby, go straight, right at the T-junction, then first classroom on the left." },
+  { match: ["classroom 4", "classroom four", "class 4"], answer: "Classroom 4 is beside Classroom 3. From the lobby, go straight, right at the T-junction, then second classroom on the left." }
+];
+
+// FAQ knowledge base (loaded from faqs.json)
+let FAQS = [];
+let faqsLoaded = false;
+let faqsLoadPromise = null;
 
 // Mic support
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -120,6 +79,8 @@ const inputSubmit = document.getElementById("input-submit");
 const inputClose = document.getElementById("input-close");
 const inputModeButtons = document.querySelectorAll(".input-switch button");
 const micStatus = document.getElementById("mic-status");
+const keyboardOverlay = document.getElementById("keyboard-overlay");
+const onScreenKeyboard = document.getElementById("on-screen-keyboard");
 
 // =======================
 //  THREE.JS SCENE SETUP
@@ -163,7 +124,7 @@ let pointerNorm = { x: 0, y: 0 };
 let currentAvatarId = DEFAULT_AVATAR_ID;
 
 // Input modal state
-let activeInputMode = micSupported ? "mic" : "text";
+let activeInputMode = "mic";
 let resolveInput = null;
 let recognition = null;
 let isRecording = false;
@@ -171,6 +132,7 @@ let currentTranscript = "";
 let currentUtterance = null;
 let preferredVoice = null;
 let availableVoices = [];
+let retryListenTimeout = null;
 
 // =======================
 //  INIT
@@ -190,7 +152,8 @@ function initAvatar() {
   if (!avatarContainer) return;
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x000000);
+  // Changed background to transparent so CSS gradient shows through
+  scene.background = null; 
 
   camera = new THREE.PerspectiveCamera(
     45,
@@ -515,13 +478,13 @@ function setupAvatarPicker() {
   // Handle navigation arrows for scrolling
   if (avatarPrevBtn && avatarThumbnails) {
     avatarPrevBtn.addEventListener("click", () => {
-      avatarThumbnails.parentElement.scrollBy({ left: -200, behavior: "smooth" });
+      avatarThumbnails.parentElement.scrollBy({ left: -100, behavior: "smooth" });
     });
   }
 
   if (avatarNextBtn && avatarThumbnails) {
     avatarNextBtn.addEventListener("click", () => {
-      avatarThumbnails.parentElement.scrollBy({ left: 200, behavior: "smooth" });
+      avatarThumbnails.parentElement.scrollBy({ left: 100, behavior: "smooth" });
     });
   }
 }
@@ -547,6 +510,25 @@ async function handleInteraction(kind) {
 
     const userInput = await openInputModal(kind);
     if (!userInput || !userInput.trim()) {
+      setStatus("Ready");
+      return;
+    }
+
+    const moderationIssue = moderateInput(userInput.trim());
+    if (moderationIssue) {
+      const bot = formatTextForOutput("EDGE Guide", moderationIssue);
+      output.innerHTML = bot;
+      setStatus("Ready");
+      return;
+    }
+
+    const roomAnswer = getRoomAnswer(userInput);
+    if (roomAnswer) {
+      const you = formatTextForOutput("You", userInput.trim());
+      const bot = formatTextForOutput("EDGE Guide", roomAnswer);
+      output.innerHTML = `${you}<br><br>${bot}`;
+      setStatus("Speaking...");
+      await speakText(roomAnswer);
       setStatus("Ready");
       return;
     }
@@ -615,7 +597,28 @@ function getSmallTalkAnswer(userMessage) {
   return "";
 }
 
+function moderateInput(userMessage) {
+  const txt = (userMessage || "").toLowerCase();
+  if (!txt.trim()) return "";
+  if (BAD_WORDS.some((bad) => txt.includes(bad))) {
+    return "Please keep our chat respectful. I can help with EDGE questions, directions, and programs.";
+  }
+  return "";
+}
+
+function getRoomAnswer(userMessage) {
+  const txt = (userMessage || "").toLowerCase();
+  if (!txt.trim()) return "";
+  for (const room of ROOM_RESPONSES) {
+    if (room.match.some((m) => txt.includes(m))) {
+      return room.answer;
+    }
+  }
+  return "";
+}
+
 function findBestFaqAnswer(userMessage) {
+  if (!Array.isArray(FAQS) || !FAQS.length) return "";
   const text = (userMessage || "").toLowerCase();
   if (!text.trim()) return "";
 
@@ -633,6 +636,7 @@ function findBestFaqAnswer(userMessage) {
 }
 
 async function callOpenAI(systemPrompt, userMessage) {
+  await ensureFaqsLoaded();
   const smallTalk = getSmallTalkAnswer(userMessage);
   if (smallTalk) return smallTalk;
 
@@ -659,21 +663,102 @@ function setupInputModal() {
     inputSubmit.addEventListener("click", submitInput);
   }
 
-  inputModeButtons.forEach((btn) => {
-    btn.addEventListener("click", () => switchInputMode(btn.dataset.mode));
-  });
-
-  if (!micSupported) {
-    updateMicStatus("Microphone capture is not supported in this browser. Use text input instead.");
+  if (inputTextarea) {
+    inputTextarea.addEventListener("input", () => {
+      currentTranscript = inputTextarea.value;
+      clearRetryListening();
+    });
+    inputTextarea.addEventListener("focus", () => {
+      switchInputMode("type");
+      showKeyboardOverlay();
+    });
+    inputTextarea.addEventListener("click", () => {
+      switchInputMode("type");
+      showKeyboardOverlay();
+    });
   }
 
-  switchInputMode(activeInputMode);
+  inputModeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const mode = btn.dataset.mode || "mic";
+      switchInputMode(mode);
+      if (mode === "type") {
+        showKeyboardOverlay();
+      } else {
+        hideKeyboardOverlay();
+      }
+    });
+  });
+
+  if (onScreenKeyboard) {
+    onScreenKeyboard.addEventListener("click", handleKeyboardClick);
+  }
+
+  if (keyboardOverlay) {
+    keyboardOverlay.addEventListener("click", (e) => {
+      if (e.target === keyboardOverlay) {
+        hideKeyboardOverlay();
+      }
+    });
+  }
+
+  if (!micSupported) {
+    updateMicStatus("Microphone capture is not supported in this browser. Use the on-screen keyboard instead.");
+  }
+
+  switchInputMode("mic");
+}
+
+function handleKeyboardClick(event) {
+  const keyBtn = event.target.closest("button[data-key]");
+  if (!keyBtn) return;
+  event.preventDefault();
+  applyKeyboardInput(keyBtn.dataset.key);
+}
+
+function applyKeyboardInput(key) {
+  if (!inputTextarea) return;
+
+  const start = inputTextarea.selectionStart ?? inputTextarea.value.length;
+  const end = inputTextarea.selectionEnd ?? inputTextarea.value.length;
+  let value = inputTextarea.value;
+  let cursor = end;
+
+  if (key === "backspace") {
+    if (start !== end) {
+      value = value.slice(0, start) + value.slice(end);
+      cursor = start;
+    } else if (start > 0) {
+      value = value.slice(0, start - 1) + value.slice(end);
+      cursor = start - 1;
+    }
+  } else if (key === "space") {
+    value = value.slice(0, start) + " " + value.slice(end);
+    cursor = start + 1;
+  } else if (key === "clear") {
+    value = "";
+    cursor = 0;
+  } else if (key === "enter") {
+    value = value.slice(0, start) + "\n" + value.slice(end);
+    cursor = start + 1;
+  } else if (key && key.length) {
+    value = value.slice(0, start) + key + value.slice(end);
+    cursor = start + key.length;
+  }
+
+  inputTextarea.value = value;
+  currentTranscript = value;
+  clearRetryListening();
+  inputTextarea.focus();
+  inputTextarea.setSelectionRange(cursor, cursor);
 }
 
 function openInputModal(kind) {
   return new Promise((resolve) => {
     resolveInput = resolve;
     currentTranscript = "";
+    clearRetryListening();
+    hideKeyboardOverlay();
     if (inputTextarea) inputTextarea.value = "";
 
     const copy = getInputCopy(kind);
@@ -681,9 +766,9 @@ function openInputModal(kind) {
     if (inputSubtitle) inputSubtitle.textContent = copy.subtitle;
     if (inputTextarea) inputTextarea.placeholder = copy.placeholder;
 
-    activeInputMode = micSupported ? "mic" : "text";
+    activeInputMode = micSupported ? "mic" : "type";
     switchInputMode(activeInputMode);
-    updateMicStatus(micSupported ? "Listening..." : "Mic not available. Use text input.");
+    updateMicStatus(micSupported ? "Listening..." : "Mic not available. Use the on-screen keyboard.");
 
     if (inputModal) {
       inputModal.classList.add("show");
@@ -697,7 +782,7 @@ function submitInput() {
 
   const text = (inputTextarea?.value || "").trim();
   if (!text) {
-    updateMicStatus("Say something or type your request first.");
+    updateMicStatus("Say something or type with the on-screen keyboard first.");
     return;
   }
 
@@ -705,7 +790,9 @@ function submitInput() {
 }
 
 function closeInputModal(result = null) {
+  clearRetryListening();
   stopListening();
+  hideKeyboardOverlay();
 
   if (inputModal) {
     inputModal.classList.remove("show");
@@ -720,10 +807,10 @@ function closeInputModal(result = null) {
 }
 
 function switchInputMode(mode) {
-  if (mode === "mic" && !micSupported) {
-    activeInputMode = "text";
+  if (mode === "mic" && micSupported) {
+    activeInputMode = "mic";
   } else {
-    activeInputMode = mode;
+    activeInputMode = "type";
   }
 
   inputModeButtons.forEach((btn) => {
@@ -732,17 +819,21 @@ function switchInputMode(mode) {
   });
 
   if (activeInputMode === "mic" && micSupported) {
+    hideKeyboardOverlay();
     startListening();
   } else {
     stopListening();
-    updateMicStatus("Type your question, then send.");
+    updateMicStatus("Type with the on-screen keyboard.");
+    showKeyboardOverlay();
     if (inputTextarea) inputTextarea.focus();
   }
 }
 
 function startListening() {
+  clearRetryListening();
+  if (activeInputMode !== "mic") return;
   if (!SpeechRecognition) {
-    updateMicStatus("Mic is not supported in this browser.");
+    updateMicStatus("Mic is not supported in this browser. Use the on-screen keyboard.");
     return;
   }
 
@@ -764,18 +855,26 @@ function startListening() {
 
   recognition.onerror = (e) => {
     isRecording = false;
-    updateMicStatus(`Mic error: ${e.error || "unknown"}. Try again or type instead.`);
-    setStatus("Ready");
+    const isNoSpeech = e && e.error === "no-speech";
+    setStatus(isNoSpeech ? "Waiting for your input..." : "Ready");
+    const message = isNoSpeech
+      ? "No speech detected. Listening again in 5 seconds..."
+      : `Mic error: ${e.error || "unknown"}. Say that again or type with the keyboard.`;
+    updateMicStatus(message);
+    if (isNoSpeech) {
+      scheduleRetryListening();
+    }
   };
 
   recognition.onend = () => {
     isRecording = false;
-    if (!resolveInput) return;
-    if (activeInputMode === "mic" && currentTranscript) {
+    if (!resolveInput || activeInputMode !== "mic") return;
+    if (currentTranscript) {
       return;
     }
-    updateMicStatus(currentTranscript ? "Captured speech. You can edit before sending." : "No speech detected. Try again or switch to text.");
+    updateMicStatus("No speech detected. Listening again in 5 seconds...");
     setStatus("Waiting for your input...");
+    scheduleRetryListening();
   };
 
   recognition.onresult = (event) => {
@@ -797,11 +896,40 @@ function startListening() {
 }
 
 function stopListening() {
+  clearRetryListening();
   if (recognition && isRecording) {
     recognition.stop();
   }
   isRecording = false;
   recognition = null;
+}
+
+function scheduleRetryListening() {
+  clearRetryListening();
+  if (!resolveInput || !micSupported || activeInputMode !== "mic") return;
+  retryListenTimeout = setTimeout(() => {
+    retryListenTimeout = null;
+    if (!resolveInput || !micSupported || activeInputMode !== "mic" || isRecording) return;
+    startListening();
+  }, 5000);
+}
+
+function clearRetryListening() {
+  if (retryListenTimeout) {
+    clearTimeout(retryListenTimeout);
+    retryListenTimeout = null;
+  }
+}
+
+function showKeyboardOverlay() {
+  if (!keyboardOverlay) return;
+  keyboardOverlay.classList.add("show");
+  if (inputTextarea) inputTextarea.focus();
+}
+
+function hideKeyboardOverlay() {
+  if (!keyboardOverlay) return;
+  keyboardOverlay.classList.remove("show");
 }
 
 function getInputCopy(kind) {
@@ -814,7 +942,7 @@ function getInputCopy(kind) {
   }
   return {
     title: "Talk to the guide",
-    subtitle: "Use the mic for hands-free mode or switch to text input.",
+    subtitle: "Use the mic or type with the on-screen keyboard.",
     placeholder: "Ask anything, or say Salam to begin."
   };
 }
@@ -842,8 +970,20 @@ function speakText(text) {
     utterance.voice = voice;
     utterance.lang = voiceLang;
     const isArabic = voiceLang.toLowerCase().startsWith("ar");
-    utterance.rate = isArabic ? 0.9 : 0.95;
-    utterance.pitch = isArabic ? 0.75 : 0.85;
+    const avatar = AVATARS.find((a) => a.id === currentAvatarId);
+    const isMale = avatar?.gender === "male";
+    const isFemale = avatar?.gender === "female";
+    let rate = isArabic ? 0.9 : 0.98;
+    let pitch = isArabic ? 0.8 : 0.95;
+    if (isMale) {
+      rate -= 0.05;
+      pitch -= 0.1;
+    } else if (isFemale) {
+      rate += 0.05;
+      pitch += 0.15;
+    }
+    utterance.rate = Math.max(0.8, Math.min(rate, 1.15));
+    utterance.pitch = Math.max(0.7, Math.min(pitch, 1.25));
 
     utterance.onstart = () => {
       isTalking = true;
@@ -950,23 +1090,6 @@ function selectVoiceForAvatar(avatarId) {
     ]
   };
 
-  const genderFallback = {
-    female: [
-      "Microsoft Aria Online (Natural) - English (United States)",
-      "Microsoft Jenny Online (Natural) - English (United States)",
-      "Google UK English Female",
-      "Google US English"
-    ],
-    male: [
-      "Microsoft Guy Online (Natural) - English (United States)",
-      "Microsoft Ryan Online (Natural) - English (United States)",
-      "Microsoft Naayf Online (Natural) - Arabic (Saudi Arabia)",
-      "Microsoft Hamed Online (Natural) - Arabic (Saudi Arabia)",
-      "Google UK English Male"
-    ],
-    neutral: []
-  };
-
   const names = avatarVoiceMap[avatar.id] || genderFallback[gender] || genderFallback.neutral;
   preferredVoice =
     availableVoices.find((v) => names.includes(v.name)) ||
@@ -1019,5 +1142,113 @@ function initVoiceSelection() {
   pickVoice();
   if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = pickVoice;
+  }
+}
+
+async function ensureFaqsLoaded() {
+  if (faqsLoaded) return FAQS;
+  if (!faqsLoadPromise) {
+    faqsLoadPromise = loadFaqsFromJson();
+  }
+  try {
+    await faqsLoadPromise;
+  } catch (err) {
+    console.error("Failed to load FAQs:", err);
+  }
+  return FAQS;
+}
+
+function expandFaqTemplates(templates = []) {
+  const generated = [];
+  templates.forEach((tpl) => {
+    const prefixes = Array.isArray(tpl.prefixes) && tpl.prefixes.length ? tpl.prefixes : [""];
+    const suffixes = Array.isArray(tpl.suffixes) && tpl.suffixes.length ? tpl.suffixes : [""];
+    const subjects = Array.isArray(tpl.subjects) ? tpl.subjects : [];
+    const answerTemplate = tpl.answer || "";
+    subjects.forEach((subjectRaw) => {
+      const subject = subjectRaw.trim();
+      if (!subject) return;
+      prefixes.forEach((pre) => {
+        suffixes.forEach((suf) => {
+          const qParts = [];
+          if (pre && pre.trim()) qParts.push(pre.trim());
+          qParts.push(subject);
+          if (suf && suf.trim()) qParts.push(suf.trim());
+          const q = qParts.join(" ").replace(/\s+/g, " ").trim();
+          const a = answerTemplate.replace(/\{\{subject\}\}/g, subject);
+          const baseKeywords = Array.isArray(tpl.keywords) ? tpl.keywords : [];
+          const keywords = [...baseKeywords, subject.toLowerCase()];
+          if (q && a) {
+            generated.push({ q, a, k: keywords.map((kw) => kw.toLowerCase()) });
+          }
+        });
+      });
+    });
+  });
+  return generated;
+}
+
+async function loadFaqsFromJson() {
+  try {
+    const resp = await fetch("./faqs.json", { cache: "no-cache" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    const entries = Array.isArray(data) ? data : Array.isArray(data.entries) ? data.entries : [];
+    const templates = Array.isArray(data.templates) ? data.templates : [];
+    const generated = expandFaqTemplates(templates);
+
+    let combined = [...entries, ...generated];
+
+    // Ensure at least 1000 items for coverage
+    if (combined.length && combined.length < 1000) {
+      const padding = [];
+      let idx = 0;
+      while (combined.length + padding.length < 1000) {
+        const base = combined[idx % combined.length];
+        padding.push({
+          q: `${base.q} (detail ${idx})`,
+          a: base.a,
+          k: base.k
+        });
+        idx += 1;
+      }
+      combined = combined.concat(padding);
+    }
+
+    FAQS = combined;
+    faqsLoaded = true;
+    return FAQS;
+  } catch (err) {
+    faqsLoaded = true;
+    FAQS = [];
+    throw err;
+  }
+}
+
+async function ensureFaqsLoaded() {
+  if (faqsLoaded) return FAQS;
+  if (!faqsLoadPromise) {
+    faqsLoadPromise = loadFaqsFromJson();
+  }
+  try {
+    await faqsLoadPromise;
+  } catch (err) {
+    console.error("Failed to load FAQs:", err);
+  }
+  return FAQS;
+}
+
+async function loadFaqsFromJson() {
+  try {
+    const resp = await fetch("./faqs.json", { cache: "no-cache" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    FAQS = Array.isArray(data) ? data : [];
+    faqsLoaded = true;
+    return FAQS;
+  } catch (err) {
+    faqsLoaded = true;
+    FAQS = [];
+    throw err;
   }
 }

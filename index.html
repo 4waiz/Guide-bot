@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>EDGE AI Guide Prototype</title>
+  <title>EDGE AI Guide</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,48 +19,30 @@
 
   <style>
     :root {
-      --bg: radial-gradient(circle at 10% -10%, #0b1a36 0, #050a18 40%, #03060f 80%);
-      --panel: linear-gradient(145deg, rgba(12, 18, 34, 0.92), rgba(7, 11, 21, 0.9));
-      --panel-border: rgba(118, 141, 203, 0.25);
-      --panel-glow: 0 24px 60px rgba(9, 12, 24, 0.8);
-      --text: #e9eef7;
-      --muted: #a8b3c6;
-      --accent: #7dd3fc;
-      --accent-2: #a78bfa;
-      --btn-red: linear-gradient(135deg, #ef4444, #f97316);
-      --btn-green: linear-gradient(135deg, #22c55e, #84cc16);
-      --btn-blue: linear-gradient(135deg, #3b82f6, #6366f1);
-      --card-radius: 24px;
+      /* Background & Glass Palette */
+      --bg-gradient: radial-gradient(circle at 50% 40%, #f0f6fa 0%, #dbe4eb 100%);
+      
+      /* Orange Gloss Palette */
+      --orange-light: #ffcd50;
+      --orange-mid: #ff9f00;
+      --orange-dark: #e68200;
+      --orange-shadow: rgba(255, 159, 0, 0.5);
+
+      /* Shadows */
+      --shadow-deep: 0 25px 50px -12px rgba(0,0,0,0.3);
+      
+      --text-main: #334155;
+      --text-muted: #64748b;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
       height: 100%;
-      font-family: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
-      color: var(--text);
-      background: var(--bg);
+      font-family: "Manrope", sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
       overflow: hidden;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: -40%;
-      background:
-        radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.08), transparent 35%),
-        radial-gradient(circle at 80% 10%, rgba(168, 85, 247, 0.07), transparent 35%),
-        radial-gradient(circle at 50% 80%, rgba(14, 165, 233, 0.08), transparent 35%);
-      opacity: 0.9;
-      filter: blur(42px);
-      animation: drift 48s linear infinite;
-      pointer-events: none;
-      z-index: -1;
-    }
-
-    @keyframes drift {
-      from { transform: translate3d(0,0,0); }
-      to   { transform: translate3d(120px,120px,0); }
     }
 
     #root {
@@ -68,404 +50,333 @@
       width: 100%;
       height: 100%;
       display: flex;
-      align-items: center;
       justify-content: center;
-      padding: 24px;
+      align-items: center;
     }
 
     #app {
       width: 100%;
-      max-width: 1040px;
+      max-width: 600px;
       height: 100%;
-      max-height: 1366px;
+      /* Allow height to grow but keep it centered */
+      max-height: 1200px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
+      gap: 18px;
+      padding: 24px 20px 32px;
+      position: relative;
+    }
+
+    /* --- TOP BUTTONS (Orange Glossy) --- */
+    .top-controls {
+      width: 100%;
+      display: flex;
       justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      z-index: 20;
+      flex-shrink: 0;
+    }
+
+    .glassy-btn-orange {
+      position: relative;
+      min-width: 130px;
+      height: 48px;
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: 24px;
+      background: linear-gradient(180deg, var(--orange-light) 0%, var(--orange-mid) 45%, var(--orange-dark) 100%);
+      box-shadow: 
+        0 6px 15px var(--orange-shadow),
+        inset 0 1px 0 rgba(255,255,255,0.8),
+        inset 0 -2px 0 rgba(0,0,0,0.1);
+      color: white;
+      font-weight: 800;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s, filter 0.2s;
+    }
+
+    .glassy-btn-orange::after {
+      content: "";
+      position: absolute;
+      top: 2px; left: 3px; right: 3px; height: 45%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.2) 100%);
+      border-radius: 20px 20px 40px 40px;
+      pointer-events: none;
+    }
+
+    .glassy-btn-orange:active { transform: translateY(2px) scale(0.98); box-shadow: 0 2px 5px var(--orange-shadow); }
+    .glassy-btn-orange:disabled { filter: grayscale(1); opacity: 0.6; cursor: not-allowed; }
+
+    /* --- AVATAR MAIN (Big Sphere) --- */
+    #avatar-wrapper {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      position: relative;
+      z-index: 5;
+      /* Removed negative margin to prevent overlap */
+      margin: 10px 0; 
     }
 
     #avatar-container {
       position: relative;
-      width: min(70vw, 620px);
-      aspect-ratio: 3 / 4;
-      margin-top: min(4vh, 32px);
-      border-radius: calc(var(--card-radius) + 4px);
+      /* Large size */
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f8fafc, #cbd5e1);
+      box-shadow: 
+        -15px -15px 30px rgba(255,255,255,1),
+        20px 20px 50px rgba(0,0,0,0.2),
+        inset 0 0 0 2px rgba(255,255,255,0.3);
       overflow: hidden;
-      background: radial-gradient(circle at 35% 20%, #0f172a 0, #020617 70%);
-      box-shadow:
-        0 32px 80px rgba(6, 10, 22, 0.8),
-        0 0 0 1px rgba(255, 255, 255, 0.04);
+      /* Flex shrink ensures it scales down on smaller screens instead of overflowing */
+      flex-shrink: 1; 
     }
 
-    #avatar-container canvas { display: block; }
+    /* Reflection */
+    #avatar-container::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 5%, rgba(255,255,255,0.8) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #avatar-container canvas { display: block; width: 100%; height: 100%; }
+
     #avatar-loading {
       position: absolute;
       inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #9ca3af;
-      font-size: 0.95rem;
-      background: radial-gradient(circle at top, rgba(15,23,42,0.9), rgba(0,0,0,0.96));
-    }
-
-    #hud {
-      width: 100%;
-      max-width: 780px;
-      margin-bottom: min(4vh, 32px);
-      padding: 18px 20px 16px;
-      border-radius: var(--card-radius);
-      background: var(--panel);
-      box-shadow:
-        var(--panel-glow),
-        0 0 0 1px var(--panel-border),
-        0 0 30px rgba(125, 211, 252, 0.08);
-      backdrop-filter: blur(10px);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    #avatar-picker {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      align-self: flex-start;
-    }
-
-    #avatar-picker .label {
       font-weight: 700;
-      color: #dbe5ff;
-      letter-spacing: 0.01em;
-      font-size: 0.94rem;
+      color: var(--text-muted);
     }
 
-    #avatar-select {
-      flex: 0 0 auto;
-      width: 230px;
-      border-radius: 12px;
-      border: 1px solid rgba(136, 189, 255, 0.35);
-      background: linear-gradient(145deg, #f7fbff, #e6eef7);
-      color: #0f172a;
-      padding: 10px 12px;
-      font-size: 0.95rem;
-      font-weight: 800;
-      cursor: pointer;
-      box-shadow:
-        0 10px 20px rgba(12, 20, 38, 0.45),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    }
-
-    #avatar-select option {
-      font-size: 0.95rem;
-      color: #0b1220;
-    }
-
-    #avatar-select:focus {
-      outline: 2px solid rgba(125, 211, 252, 0.6);
-      border-color: rgba(99, 102, 241, 0.7);
-      box-shadow:
-        0 12px 30px rgba(99, 102, 241, 0.28),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    }
-
-    /* Avatar Picker Carousel */
+    /* --- CAROUSEL (No Overlap) --- */
     #avatar-picker-carousel {
+      width: 130%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 20px;
+      /* Positive margin to create GAP */
+      margin-top: 10px; 
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+    
+    /* Arrows still lifted to keep the "smile" curve look relative to thumbnails */
+    .nav-arrow {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid white;
+      background: #f1f5f9;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      color: #64748b;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      width: 100%;
-      max-width: 780px;
-      padding: 16px 8px;
-      margin-top: -10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      /* Lift arrows up relative to thumbnails */
+      margin-bottom: 40px; 
     }
+    .nav-arrow:hover { background: #fff; transform: scale(1.1); color: var(--orange-mid); }
 
     .avatar-thumbnails-container {
-      flex: 1;
+      flex: 0 1 400px;
       overflow-x: auto;
-      overflow-y: hidden;
-      max-width: 480px;
-      scroll-behavior: smooth;
       scrollbar-width: none;
-      -ms-overflow-style: none;
+      padding: 20px 10px 10px 10px;
+      mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+      -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
     }
-
-    .avatar-thumbnails-container::-webkit-scrollbar {
-      display: none;
-    }
+    .avatar-thumbnails-container::-webkit-scrollbar { display: none; }
 
     .avatar-thumbnails {
       display: flex;
-      gap: 12px;
-      padding: 8px 4px;
-      width: max-content;
+      gap: 15px;
+      padding: 0 20px;
+      align-items: flex-end;
     }
 
     .avatar-thumb {
-      flex-shrink: 0;
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.15);
-      background: rgba(15, 23, 42, 0.6);
-      cursor: pointer;
+      border: 3px solid white;
+      background: #e2e8f0;
       overflow: hidden;
-      padding: 0;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      flex-shrink: 0;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      opacity: 0.7;
     }
 
     .avatar-thumb img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center top;
-      border-radius: 50%;
+      object-position: top;
     }
 
-    .avatar-thumb:hover {
-      transform: scale(1.1);
-      border-color: rgba(255, 255, 255, 0.4);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-    }
-
+    /* Selected State - Pops up slightly, but no overlap with main sphere */
     .avatar-thumb.selected {
-      border-color: #f97316;
-      box-shadow:
-        0 0 0 3px rgba(249, 115, 22, 0.3),
-        0 6px 20px rgba(249, 115, 22, 0.4);
-      transform: scale(1.15);
+      width: 80px; 
+      height: 80px;
+      border-color: #fff;
+      box-shadow: 
+        0 0 0 4px var(--orange-mid),
+        0 15px 35px rgba(255, 159, 0, 0.4);
+      transform: translateY(-10px) scale(1.05);
+      z-index: 20;
+      opacity: 1;
+    }
+    
+    .avatar-thumb:hover:not(.selected) {
+      transform: translateY(-5px);
+      opacity: 1;
     }
 
-    .nav-arrow {
-      flex-shrink: 0;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.05);
-      color: rgba(255, 255, 255, 0.7);
-      cursor: pointer;
+    /* --- HUD / CHAT --- */
+    #hud {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.8);
+      border-radius: 32px;
+      box-shadow: var(--shadow-deep);
+      padding: 24px 28px;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
-
-    .nav-arrow:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.4);
-      color: #fff;
-    }
-
-    .nav-arrow:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    @media (max-width: 768px) {
-      #avatar-picker-carousel {
-        padding: 12px 4px;
-        gap: 8px;
-      }
-
-      .avatar-thumbnails-container {
-        max-width: 260px;
-      }
-
-      .avatar-thumb {
-        width: 50px;
-        height: 50px;
-      }
-
-      .nav-arrow {
-        width: 36px;
-        height: 36px;
-      }
-
-      .nav-arrow svg {
-        width: 20px;
-        height: 20px;
-      }
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      margin-bottom: 20px;
+      z-index: 30;
+      flex-shrink: 0;
     }
 
     #output {
-      min-height: 72px;
-      max-height: 220px;
-      overflow-y: auto;
-      font-size: 0.95rem;
+      font-size: 1.05rem;
       line-height: 1.5;
-      color: var(--text);
-      padding: 8px 6px 0;
+      color: var(--text-main);
+      max-height: 100px;
+      overflow-y: auto;
+      scrollbar-width: none;
     }
-
-    #output strong { color: #7dd3fc; }
+    #output strong { color: #d97706; }
 
     #status-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
       font-size: 0.85rem;
-      color: var(--muted);
+      color: var(--text-muted);
+      font-weight: 600;
+      border-top: 1px solid rgba(0,0,0,0.05);
+      padding-top: 10px;
     }
-
-    #status { letter-spacing: 0.01em; }
 
     #stop-speech {
+      background: #e2e8f0;
       border: none;
-      padding: 8px 12px;
-      border-radius: 12px;
-      background: var(--btn-red);
-      color: #0b1220;
-      font-weight: 800;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 12px 24px rgba(249, 115, 22, 0.45);
+    }
+    #stop-speech:not(:disabled) {
+      background: #ef4444;
+      box-shadow: 0 4px 10px rgba(239,68,68,0.4);
     }
 
-    #stop-speech:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    .buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .buttons button {
-      flex: 1;
-      border: none;
-      border-radius: 999px;
-      padding: 13px 12px;
-      font-size: 0.95rem;
-      font-weight: 800;
-      cursor: pointer;
-      color: #f9fafb;
-      background-size: 200% 200%;
-      transition:
-        transform 0.09s ease,
-        box-shadow 0.13s ease,
-        background-position 0.4s ease,
-        opacity 0.1s;
-      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.7);
-    }
-
-    .btn-speak { background-image: linear-gradient(135deg, #ef4444, #fb7185); }
-    .btn-paths { background-image: linear-gradient(135deg, #22c55e, #a3e635); }
-    .btn-qna   { background-image: linear-gradient(135deg, #3b82f6, #8b5cf6); }
-
-    .buttons button:hover:not(:disabled) {
-      transform: translateY(-1px) scale(1.01);
-      box-shadow:
-        0 14px 30px rgba(15, 23, 42, 0.9),
-        0 0 18px rgba(125, 211, 252, 0.55);
-      background-position: 100% 0;
-    }
-
-    .buttons button:active:not(:disabled) {
-      transform: translateY(1px) scale(0.99);
-      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.8);
-    }
-
-    .buttons button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-      box-shadow: none;
-      transform: none;
-    }
-
-    /* Input modal */
+    /* --- MODAL (Unchanged) --- */
     #input-modal {
       position: fixed;
       inset: 0;
-      background: rgba(2, 6, 23, 0.78);
-      backdrop-filter: blur(6px);
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(8px);
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 16px;
-      z-index: 50;
+      z-index: 100;
     }
-
     #input-modal.show { display: flex; }
 
     .input-card {
-      width: min(600px, 94vw);
-      background: linear-gradient(155deg, rgba(11, 18, 34, 0.98), rgba(6, 10, 20, 0.96));
-      border-radius: 22px;
-      border: 1px solid rgba(125, 211, 252, 0.2);
-      box-shadow:
-        0 28px 80px rgba(3, 7, 18, 0.65),
-        0 0 0 1px rgba(59, 130, 246, 0.25),
-        0 0 45px rgba(99,102,241,0.16);
-      padding: 18px;
+      width: min(500px, 92vw);
+      background: #fff;
+      border-radius: 32px;
+      padding: 30px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 20px;
     }
 
     .input-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      align-items: center;
     }
-
-    .input-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #e5e7eb;
-    }
-
-    .input-subtitle {
-      font-size: 0.92rem;
-      color: #cbd5e1;
-      margin-top: 2px;
-      line-height: 1.3;
-    }
-
+    .input-title { font-size: 1.4rem; font-weight: 800; color: #1e293b; }
+    
     #input-close {
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      background: rgba(255, 255, 255, 0.04);
-      color: #e5e7eb;
-      border-radius: 999px;
-      width: 34px;
-      height: 34px;
+      background: #f1f5f9;
+      border: none;
+      width: 40px; height: 40px;
+      border-radius: 50%;
       cursor: pointer;
-      font-weight: 700;
-      transition: all 0.1s ease;
+      font-weight: bold;
+      color: #64748b;
+      font-size: 1.1rem;
     }
-
-    #input-close:hover { background: rgba(255, 255, 255, 0.08); }
 
     .input-switch {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+      display: flex;
+      background: #f1f5f9;
+      padding: 6px;
+      border-radius: 16px;
+      gap: 8px;
     }
-
     .input-switch button {
-      border: 1px solid rgba(148, 163, 184, 0.38);
-      border-radius: 14px;
+      flex: 1;
       padding: 12px;
-      background: rgba(255, 255, 255, 0.04);
-      color: #cbd5e1;
+      border: none;
+      background: transparent;
+      border-radius: 12px;
       cursor: pointer;
       font-weight: 700;
-      transition: all 0.12s ease;
+      color: #64748b;
     }
-
     .input-switch button.active {
-      background: linear-gradient(120deg, #38bdf8, #a78bfa);
-      color: #0b1220;
-      border-color: rgba(59,130,246,0.6);
-      box-shadow:
-        0 10px 30px rgba(59, 130, 246, 0.35),
-        inset 0 1px 0 rgba(255,255,255,0.35);
+      background: #fff;
+      color: var(--orange-dark);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     }
 
     .input-body {
@@ -476,77 +387,104 @@
 
     #input-textarea {
       width: 100%;
-      min-height: 140px;
-      border-radius: 14px;
-      border: 1px solid rgba(148, 163, 184, 0.32);
-      background: rgba(15, 23, 42, 0.82);
-      color: #e5e7eb;
-      padding: 12px;
-      font-size: 0.96rem;
-      line-height: 1.5;
+      min-height: 120px;
+      padding: 18px;
+      border: 2px solid #e2e8f0;
+      border-radius: 18px;
+      font-family: inherit;
       resize: vertical;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+      font-size: 1rem;
+      outline: none;
     }
+    #input-textarea:focus { border-color: var(--orange-mid); }
 
-    #input-textarea:focus {
-      outline: 2px solid rgba(59, 130, 246, 0.5);
-      border-color: rgba(59, 130, 246, 0.8);
+    #on-screen-keyboard {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 8px 24px rgba(0,0,0,0.05);
     }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.05);
-      border: 1px dashed rgba(148,163,184,0.45);
-      color: #cbd5e1;
-      font-size: 0.9rem;
-    }
-
-    .input-actions {
+    .keyboard-row {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .keyboard-row:last-child { margin-bottom: 0; }
+    .key-btn {
+      flex: 1;
+      min-width: 40px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+      color: #334155;
+      font-weight: 700;
+      padding: 10px 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      transition: transform 0.08s ease, box-shadow 0.12s ease;
+    }
+    .key-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .key-wide { flex: 2; }
+    .key-ghost {
+      background: linear-gradient(135deg, var(--orange-light), var(--orange-mid));
+      color: #fff;
+      border-color: var(--orange-mid);
+    }
+
+    /* Keyboard overlay */
+    #keyboard-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.08);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 16px;
+      z-index: 200;
+    }
+    #keyboard-overlay.show { display: flex; }
+    #on-screen-keyboard {
+      width: min(520px, 95vw);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 10px 28px rgba(0,0,0,0.12);
     }
 
     #input-submit {
-      margin-left: auto;
+      background: linear-gradient(135deg, var(--orange-mid), var(--orange-dark));
+      color: white;
       border: none;
-      border-radius: 999px;
-      padding: 12px 18px;
-      font-size: 0.96rem;
+      padding: 14px 32px;
+      border-radius: 99px;
       font-weight: 800;
+      font-size: 1rem;
       cursor: pointer;
-      color: #0b1220;
-      background: linear-gradient(135deg, #4ade80, #a3e635);
-      box-shadow: 0 12px 26px rgba(74, 222, 128, 0.4);
-      transition: transform 0.09s ease, box-shadow 0.12s ease;
+      box-shadow: 0 6px 20px var(--orange-shadow);
+      align-self: flex-end;
     }
 
-    #input-submit:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 16px 32px rgba(74, 222, 128, 0.5);
+    @media (max-width: 600px) {
+      /* Mobile layout tweaks */
+      #avatar-container { width: 85vw; height: 85vw; }
+      .glassy-btn-orange { min-width: 100px; height: 42px; font-size: 0.8rem; }
+      .nav-arrow { width: 40px; height: 40px; margin-bottom: 30px; }
+      /* Reduce gap slightly on small screens */
+      #avatar-picker-carousel { margin-top: 5px; } 
     }
-
-    #input-submit:active { transform: translateY(1px); }
-
-    @media (max-width: 768px) {
-      #avatar-container {
-        width: 90vw;
-        margin-top: 12px;
-      }
-      #hud {
-        margin-bottom: 14px;
-        padding: 14px 14px 12px;
-      }
-      .buttons button {
-        font-size: 0.85rem;
-        padding: 10px 6px;
-      }
-      .input-card { padding: 14px; }
+    
+    /* Ensure responsiveness for short screens */
+    @media (max-height: 800px) {
+      #avatar-container { width: 320px; height: 320px; }
+      #avatar-picker-carousel { margin-top: 5px; }
+      .avatar-thumb.selected { width: 70px; height: 70px; }
+      .nav-arrow { margin-bottom: 30px; }
     }
   </style>
 </head>
@@ -554,122 +492,150 @@
 <body>
   <div id="root">
     <div id="app">
-      <div id="avatar-container">
-        <div id="avatar-loading">Loading EDGE Guide...</div>
+
+      <!-- Top Buttons -->
+      <div class="top-controls">
+        <button id="btn-speak" class="glassy-btn-orange">Speak</button>
+        <button id="btn-paths" class="glassy-btn-orange">Paths</button>
       </div>
 
-      <!-- Avatar Picker Carousel -->
+      <!-- Avatar Sphere -->
+      <div id="avatar-wrapper">
+        <div id="avatar-container">
+          <div id="avatar-loading">Loading Guide...</div>
+        </div>
+      </div>
+
+      <!-- Carousel (Gap Added, No Overlap) -->
       <div id="avatar-picker-carousel">
-        <button class="nav-arrow nav-prev" id="avatar-prev" aria-label="Previous avatars">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="nav-arrow nav-prev" id="avatar-prev">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="15,18 9,12 15,6"></polyline>
           </svg>
         </button>
 
         <div class="avatar-thumbnails-container">
           <div class="avatar-thumbnails" id="avatar-thumbnails">
-            <button class="avatar-thumb selected" data-avatar="muhammad" aria-label="Select Muhammad">
-              <img src="./avatar/avatar/images/muhammad.png" alt="Muhammad" />
-            </button>
-            <button class="avatar-thumb" data-avatar="anna" aria-label="Select Anna">
-              <img src="./avatar/avatar/images/anna.png" alt="Anna" />
-            </button>
-            <button class="avatar-thumb" data-avatar="aki" aria-label="Select Aki">
-              <img src="./avatar/avatar/images/aki.png" alt="Aki" />
-            </button>
-            <button class="avatar-thumb" data-avatar="amari" aria-label="Select Amari">
-              <img src="./avatar/avatar/images/amari.png" alt="Amari" />
-            </button>
-            <button class="avatar-thumb" data-avatar="leo" aria-label="Select Leo">
-              <img src="./avatar/avatar/images/leo.png" alt="Leo" />
-            </button>
-            <button class="avatar-thumb" data-avatar="maya" aria-label="Select Maya">
-              <img src="./avatar/avatar/images/maya.png" alt="Maya" />
-            </button>
-            <button class="avatar-thumb" data-avatar="rose" aria-label="Select Rose">
-              <img src="./avatar/avatar/images/rose.png" alt="Rose" />
-            </button>
-            <button class="avatar-thumb" data-avatar="shonith" aria-label="Select Shonith">
-              <img src="./avatar/avatar/images/shonith.png" alt="Shonith" />
-            </button>
-            <button class="avatar-thumb" data-avatar="tom" aria-label="Select Tom">
-              <img src="./avatar/avatar/images/tom.png" alt="Tom" />
-            </button>
-            <button class="avatar-thumb" data-avatar="wei" aria-label="Select Wei">
-              <img src="./avatar/avatar/images/wei.png" alt="Wei" />
-            </button>
-            <button class="avatar-thumb" data-avatar="zara" aria-label="Select Zara">
-              <img src="./avatar/avatar/images/zara.png" alt="Zara" />
-            </button>
-            <button class="avatar-thumb" data-avatar="zola" aria-label="Select Zola">
-              <img src="./avatar/avatar/images/zola.png" alt="Zola" />
-            </button>
+            <!-- Data attributes for JS -->
+            <div class="avatar-thumb selected" data-avatar="muhammad"><img src="./avatar/avatar/images/muhammad.png"></div>
+            <div class="avatar-thumb" data-avatar="anna"><img src="./avatar/avatar/images/anna.png"></div>
+            <div class="avatar-thumb" data-avatar="aki"><img src="./avatar/avatar/images/aki.png"></div>
+            <div class="avatar-thumb" data-avatar="amari"><img src="./avatar/avatar/images/amari.png"></div>
+            <div class="avatar-thumb" data-avatar="leo"><img src="./avatar/avatar/images/leo.png"></div>
+            <div class="avatar-thumb" data-avatar="maya"><img src="./avatar/avatar/images/maya.png"></div>
+            <div class="avatar-thumb" data-avatar="rose"><img src="./avatar/avatar/images/rose.png"></div>
+            <div class="avatar-thumb" data-avatar="shonith"><img src="./avatar/avatar/images/shonith.png"></div>
+            <div class="avatar-thumb" data-avatar="tom"><img src="./avatar/avatar/images/tom.png"></div>
+            <div class="avatar-thumb" data-avatar="wei"><img src="./avatar/avatar/images/wei.png"></div>
+            <div class="avatar-thumb" data-avatar="zara"><img src="./avatar/avatar/images/zara.png"></div>
+            <div class="avatar-thumb" data-avatar="zola"><img src="./avatar/avatar/images/zola.png"></div>
           </div>
         </div>
 
-        <button class="nav-arrow nav-next" id="avatar-next" aria-label="Next avatars">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="nav-arrow nav-next" id="avatar-next">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="9,18 15,12 9,6"></polyline>
           </svg>
         </button>
       </div>
 
+      <!-- Chat/HUD -->
       <div id="hud">
-        <!-- Hidden select for JS compatibility -->
-        <select id="avatar-select" aria-label="Choose avatar" style="display: none;">
+        <select id="avatar-select" style="display: none;">
           <option value="muhammad" selected>Muhammad</option>
-          <option value="anna">Anna</option>
-          <option value="aki">Aki</option>
-          <option value="amari">Amari</option>
-          <option value="leo">Leo</option>
-          <option value="maya">Maya</option>
-          <option value="rose">Rose</option>
-          <option value="shonith">Shonith</option>
-          <option value="tom">Tom</option>
-          <option value="wei">Wei</option>
-          <option value="zara">Zara</option>
-          <option value="zola">Zola</option>
         </select>
 
         <div id="output">
-          <strong>EDGE Guide:</strong> Salam! I'm your AI assistant. Tap a button to begin.
+          <strong>EDGE Guide:</strong> Salam! I'm your AI assistant. Tap a button above to begin.
         </div>
+        
         <div id="status-row">
           <div id="status">Ready</div>
-          <button id="stop-speech" disabled>Stop voice</button>
+          <button id="stop-speech" disabled>Stop</button>
         </div>
+      </div>
 
-        <div class="buttons">
-          <button id="btn-speak" class="btn-speak">Speak</button>
-          <button id="btn-paths" class="btn-paths">Paths</button>
-        </div>
+    </div>
+  </div>
+
+  <!-- Input Modal (Hidden by default) -->
+  <div id="input-modal" aria-hidden="true">
+    <div class="input-card" role="dialog" aria-modal="true">
+      <div class="input-header">
+        <div class="input-title" id="input-title">Talk to guide</div>
+        <button id="input-close">X</button>
+      </div>
+      <div class="input-subtitle" id="input-subtitle" style="color:#64748b; font-size:0.9rem;">Use the mic or the on-screen keyboard.</div>
+
+      <div class="input-switch">
+        <button data-mode="mic" class="active">Mic</button>
+        <button data-mode="type">Type</button>
+      </div>
+
+      <div class="input-body">
+        <textarea id="input-textarea" placeholder="Type here..."></textarea>
+        <div id="mic-status" style="font-size:0.85rem; color:#d97706; margin-top:5px;"></div>
+      </div>
+
+      <div class="input-actions">
+        <button id="input-submit">Send</button>
       </div>
     </div>
   </div>
 
-  <div id="input-modal" aria-hidden="true">
-    <div class="input-card" role="dialog" aria-modal="true">
-      <div class="input-header">
-        <div>
-          <div class="input-title" id="input-title">Talk to the guide</div>
-          <div class="input-subtitle" id="input-subtitle">Choose mic or text and share your question.</div>
-        </div>
-        <button id="input-close" aria-label="Close input panel">X</button>
+  <div id="keyboard-overlay">
+    <div id="on-screen-keyboard">
+      <div class="keyboard-row">
+        <button class="key-btn" data-key="1">1</button>
+        <button class="key-btn" data-key="2">2</button>
+        <button class="key-btn" data-key="3">3</button>
+        <button class="key-btn" data-key="4">4</button>
+        <button class="key-btn" data-key="5">5</button>
+        <button class="key-btn" data-key="6">6</button>
+        <button class="key-btn" data-key="7">7</button>
+        <button class="key-btn" data-key="8">8</button>
+        <button class="key-btn" data-key="9">9</button>
+        <button class="key-btn" data-key="0">0</button>
       </div>
-
-      <div class="input-switch">
-        <button data-mode="mic" class="active">Mic input</button>
-        <button data-mode="text">Text input</button>
+      <div class="keyboard-row">
+        <button class="key-btn" data-key="q">Q</button>
+        <button class="key-btn" data-key="w">W</button>
+        <button class="key-btn" data-key="e">E</button>
+        <button class="key-btn" data-key="r">R</button>
+        <button class="key-btn" data-key="t">T</button>
+        <button class="key-btn" data-key="y">Y</button>
+        <button class="key-btn" data-key="u">U</button>
+        <button class="key-btn" data-key="i">I</button>
+        <button class="key-btn" data-key="o">O</button>
+        <button class="key-btn" data-key="p">P</button>
       </div>
-
-      <div class="input-body">
-        <textarea id="input-textarea" placeholder="Start talking or type your question..."></textarea>
-        <div class="pill" id="mic-status">Tap mic tab to start listening automatically.</div>
+      <div class="keyboard-row">
+        <button class="key-btn" data-key="a">A</button>
+        <button class="key-btn" data-key="s">S</button>
+        <button class="key-btn" data-key="d">D</button>
+        <button class="key-btn" data-key="f">F</button>
+        <button class="key-btn" data-key="g">G</button>
+        <button class="key-btn" data-key="h">H</button>
+        <button class="key-btn" data-key="j">J</button>
+        <button class="key-btn" data-key="k">K</button>
+        <button class="key-btn" data-key="l">L</button>
       </div>
-
-      <div class="input-actions">
-        <div style="color:#94a3b8; font-size:0.85rem;">You can edit the transcript before sending.</div>
-        <button id="input-submit">Send</button>
+      <div class="keyboard-row">
+        <button class="key-btn" data-key="z">Z</button>
+        <button class="key-btn" data-key="x">X</button>
+        <button class="key-btn" data-key="c">C</button>
+        <button class="key-btn" data-key="v">V</button>
+        <button class="key-btn" data-key="b">B</button>
+        <button class="key-btn" data-key="n">N</button>
+        <button class="key-btn" data-key="m">M</button>
+        <button class="key-btn" data-key=".">.</button>
+        <button class="key-btn" data-key="?">?</button>
+      </div>
+      <div class="keyboard-row">
+        <button class="key-btn key-wide" data-key="space">Space</button>
+        <button class="key-btn key-wide" data-key="enter">Enter</button>
+        <button class="key-btn" data-key="backspace">Backspace</button>
+        <button class="key-btn key-ghost" data-key="clear">Clear</button>
       </div>
     </div>
   </div>

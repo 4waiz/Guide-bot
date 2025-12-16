@@ -1,0 +1,140 @@
+{
+  "entries": [
+    {
+      "q": "Where is the VIP room?",
+      "a": "From the main lobby, take the elevator to Level 2. Walk past reception, the VIP room is the first door on the left with gold signage.",
+      "k": ["vip", "vip room", "vip lounge", "vip area"]
+    },
+    {
+      "q": "Where is Office 1?",
+      "a": "Office 1 is on Level 1. From the lobby, turn right at the main hallway, it's the second glass door on your right.",
+      "k": ["office 1", "office one", "office", "level 1 office"]
+    },
+    {
+      "q": "Where is Office 2?",
+      "a": "Office 2 is on Level 1. From the lobby, turn left at the hallway, it's the door next to the meeting pod.",
+      "k": ["office 2", "office two", "office", "level 1 office"]
+    },
+    {
+      "q": "Where is Classroom 1?",
+      "a": "Classroom 1 is on Level 1. From the lobby, go straight, then left at the T-junction. It is the first classroom on the right.",
+      "k": ["classroom 1", "classroom one", "room 1", "class 1"]
+    },
+    {
+      "q": "Where is Classroom 2?",
+      "a": "Classroom 2 is next to Classroom 1. From the lobby, go straight, left at the T-junction, then second classroom on the right.",
+      "k": ["classroom 2", "classroom two", "room 2", "class 2"]
+    },
+    {
+      "q": "Where is Classroom 3?",
+      "a": "Classroom 3 is on Level 1. From the lobby, go straight, right at the T-junction, then first classroom on the left.",
+      "k": ["classroom 3", "classroom three", "room 3", "class 3"]
+    },
+    {
+      "q": "Where is Classroom 4?",
+      "a": "Classroom 4 is beside Classroom 3. From the lobby, go straight, right at the T-junction, then second classroom on the left.",
+      "k": ["classroom 4", "classroom four", "room 4", "class 4"]
+    },
+    {
+      "q": "Where is EDGE Group located?",
+      "a": "EDGE Group is headquartered in Abu Dhabi, UAE. The Learning & Innovation Factory is inside the EDGE campus.",
+      "k": ["edge group", "abu dhabi", "location", "where"]
+    },
+    {
+      "q": "Do you have a code of conduct?",
+      "a": "Yes. We keep conversations respectful and professional. Offensive language is not allowed.",
+      "k": ["code of conduct", "rules", "respect", "language"]
+    }
+  ],
+  "templates": [
+    {
+      "name": "tech_topics",
+      "prefixes": ["Tell me about", "What is", "Explain", "Give me a quick note on", "How does", "Quick overview of"],
+      "suffixes": ["", " in simple terms", " briefly", " for EDGE", " at EDGE in Abu Dhabi", " in industry training"],
+      "subjects": [
+        "AI safety",
+        "machine learning",
+        "robotics programming",
+        "drone operations",
+        "cybersecurity basics",
+        "cloud migration",
+        "edge computing",
+        "digital twins",
+        "3D printing",
+        "CNC machining",
+        "PLC programming",
+        "IoT sensors",
+        "data analytics",
+        "machine vision",
+        "AR and VR training",
+        "MRO processes",
+        "automation strategy",
+        "safety protocols",
+        "human factors",
+        "UI and UX",
+        "product management",
+        "change management",
+        "supply chain visibility",
+        "smart manufacturing",
+        "satellite systems",
+        "radar basics",
+        "RF communications",
+        "additive manufacturing",
+        "welding fundamentals",
+        "materials science",
+        "composites",
+        "battery technology",
+        "power electronics",
+        "industrial networking",
+        "wireless 5G and 6G",
+        "DevOps",
+        "MLOps",
+        "coding bootcamps",
+        "security operations centers"
+      ],
+      "answer": "EDGE trains teams on {{subject}} with concise, hands-on sessions in Abu Dhabi.",
+      "keywords": ["tech", "training", "edge", "abu dhabi", "learning", "innovation"]
+    },
+    {
+      "name": "edge_culture",
+      "prefixes": ["Share a quick fact about", "What can you tell me about", "I want to know about", "Can you chat about", "Explain"],
+      "suffixes": ["", " quickly", " in one line", " for visitors", " for newcomers"],
+      "subjects": [
+        "EDGE Group culture",
+        "innovation at EDGE",
+        "EDGE partnerships",
+        "training style at EDGE",
+        "hands-on labs at EDGE",
+        "career growth with EDGE",
+        "tech communities in Abu Dhabi",
+        "STEM events at EDGE",
+        "demo days at EDGE",
+        "bootcamps at the factory",
+        "mentorship at EDGE"
+      ],
+      "answer": "{{subject}} is focused on practical learning, short answers, and fast execution.",
+      "keywords": ["edge", "culture", "abu dhabi", "factory", "training"]
+    },
+    {
+      "name": "casual_chat",
+      "prefixes": ["Say something about", "Short line on", "One-liner on", "I am curious about", "Talk about"],
+      "suffixes": ["", " for me", " for a visitor", " in Abu Dhabi"],
+      "subjects": [
+        "staying respectful in chat",
+        "working with a guide bot",
+        "how to ask better questions",
+        "quick tips for visitors",
+        "best way to start a tour",
+        "how to get directions fast",
+        "keeping answers short",
+        "why EDGE uses AI guides",
+        "hands-free mode benefits",
+        "using mic versus typing",
+        "speaking clearly to the bot",
+        "how the bot handles bad words"
+      ],
+      "answer": "{{subject}}: I will keep it short, polite, and on-topic so you get fast help.",
+      "keywords": ["chat", "guide", "respect", "ask", "talk"]
+    }
+  ]
+}
