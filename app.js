@@ -135,11 +135,18 @@ let availableVoices = [];
 let retryListenTimeout = null;
 let audioUnlocked = false;
 
+// Voice-first (Siri-like) state
+let voiceFirstRecognition = null;
+let isVoiceFirstListening = false;
+let voiceFirstTranscript = "";
+let currentVoiceMode = "speak"; // "speak" or "paths"
+
 // =======================
 //  INIT
 // =======================
 setStatus("Loading avatar...");
 setStopButton(false);
+setGlowState("idle");
 initAvatar();
 setupAvatarPicker();
 setupButtons();
@@ -496,18 +503,268 @@ function setupAvatarPicker() {
 function setupButtons() {
   if (!btnSpeak || !btnPaths) return;
 
+  // Voice-first flow for Speak button (no modal)
   btnSpeak.addEventListener("click", () => {
     unlockAudioForIOS();
-    handleInteraction("speak");
+    handleVoiceFirst("speak");
   });
+
+  // Voice-first flow for Paths button (no modal)
   btnPaths.addEventListener("click", () => {
     unlockAudioForIOS();
-    handleInteraction("paths");
+    handleVoiceFirst("paths");
   });
 
   if (stopSpeechBtn) {
-    stopSpeechBtn.addEventListener("click", stopSpeaking);
+    stopSpeechBtn.addEventListener("click", stopAllSpeechActivity);
   }
+}
+
+// =======================
+//  GLOW STATE MANAGEMENT
+// =======================
+function setGlowState(state) {
+  const rootEl = document.getElementById("root");
+  // Avatar container glow (Siri ring)
+  if (avatarContainer) {
+    avatarContainer.classList.remove("state-idle", "state-listening", "state-thinking", "state-speaking");
+    if (state) {
+      avatarContainer.classList.add(`state-${state}`);
+    }
+  }
+
+  // Edge glow (iOS-style screen edges)
+  if (rootEl) {
+    rootEl.classList.remove("ui-idle", "ui-listening", "ui-thinking", "ui-speaking");
+    if (state) {
+      rootEl.classList.add(`ui-${state}`);
+    }
+  }
+}
+
+// =======================
+//  VOICE-FIRST FLOW (shared for Speak & Paths)
+// =======================
+function handleVoiceFirst(mode = "speak") {
+  // If already listening, stop and process if we have transcript
+  if (isVoiceFirstListening && voiceFirstRecognition) {
+    voiceFirstRecognition.stop();
+    return;
+  }
+
+  // Check if SpeechRecognition is supported
+  if (!SpeechRecognition) {
+    setStatus("Voice not supported — please type");
+    setGlowState("idle");
+    // Fallback to modal for typing
+    handleInteraction(mode);
+    return;
+  }
+
+  // Set mode and start voice-first listening
+  currentVoiceMode = mode;
+  startVoiceFirstListening();
+}
+
+function startVoiceFirstListening() {
+  if (isVoiceFirstListening) return;
+
+  voiceFirstRecognition = new SpeechRecognition();
+  voiceFirstRecognition.lang = "en-US";
+  voiceFirstRecognition.interimResults = true;
+  voiceFirstRecognition.maxAlternatives = 1;
+  voiceFirstRecognition.continuous = false;
+
+  voiceFirstRecognition.onstart = () => {
+    isVoiceFirstListening = true;
+    voiceFirstTranscript = "";
+    setStatus("Listening...");
+    setGlowState("listening");
+    setButtonsDisabled(false); // Keep speak button enabled to stop early
+    setStopButton(true); // Enable stop button
+    if (output) {
+      output.innerHTML = `<strong>You:</strong> <span style="color:#64748b; font-style:italic;">Listening...</span>`;
+    }
+  };
+
+  voiceFirstRecognition.onresult = (event) => {
+    let interimTranscript = "";
+    let finalTranscript = "";
+
+    for (let i = 0; i < event.results.length; i++) {
+      const result = event.results[i];
+      if (result.isFinal) {
+        finalTranscript += result[0].transcript;
+      } else {
+        interimTranscript += result[0].transcript;
+      }
+    }
+
+    // Show interim results
+    const displayText = finalTranscript || interimTranscript;
+    voiceFirstTranscript = displayText.trim();
+
+    if (output && displayText) {
+      const escaped = escapeHtml(displayText);
+      output.innerHTML = `<strong>You:</strong> ${escaped}`;
+    }
+  };
+
+  voiceFirstRecognition.onend = () => {
+    isVoiceFirstListening = false;
+
+    // Process the transcript if we have one
+    if (voiceFirstTranscript) {
+      processVoiceFirstInput(voiceFirstTranscript);
+    } else {
+      // No transcript captured
+      setStatus("No speech detected — try again");
+      setGlowState("idle");
+      setStopButton(false);
+      const buttonLabel = currentVoiceMode === "paths" ? "Paths" : "Speak";
+      if (output) {
+        output.innerHTML = `<strong>EDGE Guide:</strong> I didn't catch that. Tap ${buttonLabel} and try again.`;
+      }
+    }
+
+    voiceFirstRecognition = null;
+  };
+
+  voiceFirstRecognition.onerror = (event) => {
+    isVoiceFirstListening = false;
+    voiceFirstRecognition = null;
+    setStopButton(false);
+
+    if (event.error === "not-allowed" || event.error === "permission-denied") {
+      setStatus("Mic permission denied — please type");
+      setGlowState("idle");
+      // Fallback to modal
+      handleInteraction(currentVoiceMode);
+    } else if (event.error === "no-speech") {
+      setStatus("No speech detected — try again");
+      setGlowState("idle");
+      const buttonLabel = currentVoiceMode === "paths" ? "Paths" : "Speak";
+      if (output) {
+        output.innerHTML = `<strong>EDGE Guide:</strong> I didn't hear anything. Tap ${buttonLabel} and try again.`;
+      }
+    } else {
+      setStatus(`Mic error: ${event.error}`);
+      setGlowState("idle");
+    }
+  };
+
+  try {
+    voiceFirstRecognition.start();
+  } catch (err) {
+    console.error("Failed to start voice recognition:", err);
+    isVoiceFirstListening = false;
+    voiceFirstRecognition = null;
+    setStatus("Voice not supported — please type");
+    setGlowState("idle");
+    setStopButton(false);
+    // Fallback to modal for typing
+    handleInteraction(currentVoiceMode);
+  }
+}
+
+async function processVoiceFirstInput(userInput) {
+  try {
+    setButtonsDisabled(true);
+    setStopButton(true); // Keep stop button enabled during processing
+
+    // Check moderation
+    const moderationIssue = moderateInput(userInput);
+    if (moderationIssue) {
+      const bot = formatTextForOutput("EDGE Guide", moderationIssue);
+      output.innerHTML = bot;
+      setStatus("Ready");
+      setGlowState("idle");
+      setStopButton(false);
+      setButtonsDisabled(false);
+      return;
+    }
+
+    // Check for room directions first (applies to both modes)
+    const roomAnswer = getRoomAnswer(userInput);
+    if (roomAnswer) {
+      const you = formatTextForOutput("You", userInput);
+      const bot = formatTextForOutput("EDGE Guide", roomAnswer);
+      output.innerHTML = `${you}<br><br>${bot}`;
+      setStatus("Speaking...");
+      setGlowState("speaking");
+      await speakText(roomAnswer);
+      setStatus("Ready");
+      setGlowState("idle");
+      setStopButton(false);
+      setButtonsDisabled(false);
+      return;
+    }
+
+    // Show thinking state
+    setStatus("Thinking...");
+    setGlowState("thinking");
+    const you = formatTextForOutput("You", userInput);
+    output.innerHTML = `${you}<br><br><strong>EDGE Guide:</strong> <span style="color:#64748b; font-style:italic;">Thinking...</span>`;
+
+    // Get response using the current mode for system prompt
+    const systemPrompt = buildSystemPrompt(currentVoiceMode);
+    const reply = await callOpenAI(systemPrompt, userInput);
+
+    // Display response
+    const bot = formatTextForOutput("EDGE Guide", reply);
+    output.innerHTML = `${you}<br><br>${bot}`;
+
+    // Speak the response
+    setStatus("Speaking...");
+    setGlowState("speaking");
+    await speakText(reply);
+
+    setStatus("Ready");
+    setGlowState("idle");
+  } catch (err) {
+    console.error("Voice-first processing error:", err);
+    if (output) {
+      output.innerHTML = `<strong>Error:</strong> ${escapeHtml(err.message || "Something went wrong.")}`;
+    }
+    setStatus("Error");
+    setGlowState("idle");
+  } finally {
+    setButtonsDisabled(false);
+    setStopButton(false);
+  }
+}
+
+// Stop all speech activity (recognition + synthesis)
+function stopAllSpeechActivity() {
+  // Stop voice-first recognition if active
+  if (voiceFirstRecognition && isVoiceFirstListening) {
+    voiceFirstRecognition.abort();
+    isVoiceFirstListening = false;
+    voiceFirstRecognition = null;
+  }
+
+  // Stop modal recognition if active
+  if (recognition && isRecording) {
+    recognition.abort();
+    isRecording = false;
+    recognition = null;
+  }
+
+  // Stop speech synthesis
+  stopSpeaking();
+
+  // Reset all states
+  setGlowState("idle");
+  setStopButton(false);
+  setButtonsDisabled(false);
+  setStatus("Stopped");
+
+  // Brief delay then show Ready
+  setTimeout(() => {
+    if (!isVoiceFirstListening && !isTalking) {
+      setStatus("Ready");
+    }
+  }, 1000);
 }
 
 async function handleInteraction(kind) {

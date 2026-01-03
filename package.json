@@ -1,0 +1,9 @@
+{
+  "name": "guide-bot",
+  "version": "1.0.0",
+  "description": "EDGE AI Guide - 3D avatar chatbot",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  }
+}
