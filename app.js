@@ -447,14 +447,20 @@ function setupAvatarPicker() {
 // =======================
 //  INIT
 // =======================
-setStatus("Loading avatar...");
+setStatus("Ready");
 setStopButton(false);
 setGlowState("idle");
-initAvatar();
-setupAvatarPicker();
+
+// Initialize UI first (non-blocking)
 setupButtons();
 setupInputModal();
 initVoiceSelection();
+
+// Load avatar asynchronously in the background
+setTimeout(() => {
+  initAvatar();
+  setupAvatarPicker();
+}, 100);
 
 // =======================
 //  AVATAR INIT
@@ -473,7 +479,12 @@ function initAvatar() {
   );
   camera.position.set(0, 1.7, 0.6);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+    powerPreference: "high-performance",
+    precision: "mediump"
+  });
   renderer.setSize(avatarContainer.clientWidth, avatarContainer.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
@@ -485,8 +496,19 @@ function initAvatar() {
   dirLight.position.set(1, 2, 3);
   scene.add(dirLight);
 
+  // Start animation loop immediately for smooth background
   startAnimationLoop();
-  loadAvatar(DEFAULT_AVATAR_ID);
+
+  // Load avatar with a slight delay to prioritize page interactivity
+  if (window.requestIdleCallback) {
+    requestIdleCallback(() => {
+      loadAvatar(DEFAULT_AVATAR_ID);
+    }, { timeout: 200 });
+  } else {
+    setTimeout(() => {
+      loadAvatar(DEFAULT_AVATAR_ID);
+    }, 150);
+  }
 
   window.addEventListener("resize", () => {
     if (!camera || !renderer) return;
@@ -540,6 +562,8 @@ function loadAvatar(avatarId) {
   }
 
   const loader = new GLTFLoader();
+
+  // Add loading progress
   loader.load(
     `${AVATAR_BASE_PATH}${avatar.file}`,
     (gltf) => {
@@ -549,8 +573,23 @@ function loadAvatar(avatarId) {
       }
 
       model = gltf.scene;
+
+      // Optimize model - reduce geometry complexity if needed
+      model.traverse((child) => {
+        if (child.isMesh) {
+          // Enable frustum culling
+          child.frustumCulled = true;
+          // Optimize materials
+          if (child.material) {
+            child.material.precision = "mediump";
+          }
+        }
+      });
+
       scene.add(model);
-      if (avatarLoading) avatarLoading.style.display = "none";
+      if (avatarLoading) {
+        avatarLoading.style.display = "none";
+      }
 
       const mouthNames = ["jawOpen", "mouthOpen", "viseme_aa", "viseme_OH", "MouthOpen", "v_aa"];
       const eyeNames = ["eyeBlinkLeft", "eyeBlinkRight", "eyesClosed", "blink", "EyeBlink_L", "EyeBlink_R"];
@@ -588,10 +627,19 @@ function loadAvatar(avatarId) {
       camera.position.set(center.x, faceHeight, center.z + 0.55);
       camera.lookAt(center.x, faceHeight, center.z);
     },
-    undefined,
+    (progress) => {
+      // Show loading progress
+      if (avatarLoading && progress.total > 0) {
+        const percent = Math.round((progress.loaded / progress.total) * 100);
+        avatarLoading.textContent = `Loading ${avatar.label}... ${percent}%`;
+      }
+    },
     (err) => {
       console.error("Error loading GLB:", err);
-      if (avatarLoading) avatarLoading.textContent = "Error loading avatar";
+      if (avatarLoading) {
+        avatarLoading.textContent = "Ready (Avatar not loaded)";
+        avatarLoading.style.fontSize = "0.9rem";
+      }
     }
   );
 }
@@ -647,9 +695,12 @@ function animate() {
     // Idle smile
     smileParts.forEach((p) => { p.mesh.morphTargetInfluences[p.index] = 0.25; });
     browParts.forEach((p) => { p.mesh.morphTargetInfluences[p.index] = 0.02; });
-  }
 
-  renderer.render(scene, camera);
+    renderer.render(scene, camera);
+  } else {
+    // Only render scene without model (lighter)
+    renderer.render(scene, camera);
+  }
 }
 
 function disposeModel(obj) {
@@ -1726,5 +1777,6 @@ async function loadFaqsFromJson() {
     throw err;
   }
 }
-// Initialize avatar
-initAvatar();
+
+// Note: Avatar initialization is handled in the INIT section above
+// No need to call initAvatar() here again
