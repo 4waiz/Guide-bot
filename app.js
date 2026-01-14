@@ -2,10 +2,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-// ====================== SETTINGS ======================
-const ROBOT_IP = "192.168.208.155";   // <-- CHANGE IF YOUR ESP32 IP CHANGES
-const ROBOT_BASE = `http://${ROBOT_IP}`;
-
 // ====================== AVATAR CONFIG ======================
 const AVATAR_BASE_PATH = "./avatar/avatar/models/";
 const AVATARS = [
@@ -24,8 +20,6 @@ const AVATARS = [
 ];
 const DEFAULT_AVATAR_ID = "muhammad";
 
-const STATUS_POLL_MS = 1200;
-const FETCH_TIMEOUT_MS = 4000;
 
 // ====================== UI ELEMENTS ======================
 const speakBtn = document.getElementById("btn-speak");
@@ -59,27 +53,27 @@ function setStatus(text) {
   if (statusEl) statusEl.textContent = text || "";
 }
 
-function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
-
-async function fetchWithTimeout(url) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, { signal: ctrl.signal });
-    return res;
-  } finally {
-    clearTimeout(t);
+function setSpeechActivity(active, text = "") {
+  isTalking = active;
+  if (active) {
+    speakDuration = Math.max(1.2, text.length / CHAR_PER_SECOND);
+    speakStartTime = Date.now();
+    currentSpeechText = text;
+  } else {
+    currentSpeechText = "";
+    mouthPulseStrength = 0;
+    mouthPulseUntil = 0;
   }
 }
 
-async function robotGet(path) {
-  const url = `${ROBOT_BASE}${path}`;
-  console.log("Robot request:", url);
-  const res = await fetchWithTimeout(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+function handleSpeechBoundary(event) {
+  if (!currentSpeechText) return;
+  const idx = typeof event.charIndex === "number" ? event.charIndex : 0;
+  let end = idx;
+  while (end < currentSpeechText.length && currentSpeechText[end] !== " ") end++;
+  const len = Math.max(1, end - idx);
+  mouthPulseStrength = Math.min(1, 0.25 + len * 0.06);
+  mouthPulseUntil = Date.now() + Math.min(180, 80 + len * 12);
 }
 
 // ====================== MISSING CONSTANTS ======================
@@ -128,6 +122,10 @@ const CHAR_PER_SECOND = 12;
 let speakDuration = 0;
 let speakStartTime = 0;
 const micSupported = !!SpeechRecognition;
+let mouthOpen = 0;
+let mouthPulseUntil = 0;
+let mouthPulseStrength = 0;
+let currentSpeechText = "";
 
 // ====================== TTS (SPEAKING) ======================
 function speak(text) {
@@ -140,6 +138,16 @@ function speak(text) {
     if (v) u.voice = v;
     u.rate = 1.0;
     u.pitch = 1.0;
+    u.onstart = () => {
+      setSpeechActivity(true, text);
+    };
+    u.onboundary = handleSpeechBoundary;
+    u.onend = () => {
+      setSpeechActivity(false);
+    };
+    u.onerror = () => {
+      setSpeechActivity(false);
+    };
     window.speechSynthesis.speak(u);
   } catch (e) {
     console.warn("TTS error:", e);
@@ -187,109 +195,8 @@ function matchFaqAnswer(userText) {
   return bestScore > 0 ? best : null;
 }
 
-// ====================== COMMAND PARSING ======================
-function parseCommand(text) {
-  const t = text.toLowerCase();
-
-  // HOME / BASE
-  if (
-    t.includes("back to home") ||
-    t.includes("go home") ||
-    t.includes("take me home") ||
-    t.includes("home base") ||
-    t.includes("take me to base") ||
-    t.includes("take me to home") ||
-    (t.includes("take me") && t.includes("home")) ||
-    t.includes("base")
-  ) {
-    return { type: "home" };
-  }
-
-  // TARGETS (testing)
-  if (t.includes("banana")) return { type: "target", name: "banana" };
-  if (t.includes("apple"))  return { type: "target", name: "apple" };
-  if (t.includes("orange")) return { type: "target", name: "orange" };
-
-  // RIGHT / LEFT
-  if (t.includes("take me right") || t.includes("go right") || t.includes("turn right")) {
-    return { type: "target", name: "right" };
-  }
-  if (t.includes("take me left") || t.includes("go left") || t.includes("turn left")) {
-    return { type: "target", name: "left" };
-  }
-
-  return { type: "faq" };
-}
-
-// ====================== ROBOT ACTIONS ======================
-async function robotGoToTarget(name) {
-  addLine("Bridge Guide Bot", "Okay — follow the robot.");
-  speak("Okay. Follow the robot.");
-
-  await robotGet(`/api/go?name=${encodeURIComponent(name)}`);
-
-  const st = await waitForRobotToFinish();
-
-  if (st?.lastStopReason === "obstacle") {
-    addLine("Bridge Guide Bot", "Obstacle detected — robot stopped.");
-    speak("Obstacle detected. Robot stopped.");
-    return;
-  }
-
-  addLine("Bridge Guide Bot", "You have reached.");
-  speak("You have reached.");
-}
-
-async function robotGoHome() {
-  addLine("Bridge Guide Bot", "Okay — taking you back to home.");
-  speak("Okay. Taking you back to home.");
-
-  await robotGet(`/api/home`);
-
-  const st = await waitForRobotToFinish();
-
-  if (st?.lastStopReason === "obstacle") {
-    addLine("Bridge Guide Bot", "Obstacle detected — robot stopped.");
-    speak("Obstacle detected. Robot stopped.");
-    return;
-  }
-
-  addLine("Bridge Guide Bot", "We are back at home base.");
-  speak("We are back at home base.");
-}
-
-async function waitForRobotToFinish() {
-  // Poll status until state becomes idle
-  for (let i = 0; i < 60; i++) { // ~60 * 300ms = 18s max
-    await sleep(300);
-    try {
-      const st = await robotGet("/api/status");
-      console.log("Robot status:", st);
-
-      if (st.state === "idle") return st;
-    } catch (e) {
-      // ignore transient errors while moving
-    }
-  }
-  return null;
-}
-
-// ====================== ROBOT REACHABILITY ======================
-async function pingRobot() {
-  try {
-    await robotGet("/api/status");
-    setStatus(`✅ Robot reachable: ${ROBOT_IP}`);
-    return true;
-  } catch (e) {
-    setStatus(`⚠️ Robot not reachable. Check IP: ${ROBOT_IP}`);
-    return false;
-  }
-}
-
-setInterval(pingRobot, STATUS_POLL_MS);
-
 // ====================== SPEECH RECOGNITION ======================
-let recognition = null;  // Global speech recognition instance
+let speechRecognition = null;  // Global speech recognition instance
 
 function setupSpeech() {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -298,93 +205,63 @@ function setupSpeech() {
     return;
   }
 
-  recognition = new SpeechRec();
-  recognition.continuous = false;
-  recognition.interimResults = false;
-  recognition.lang = "en-US";
+  speechRecognition = new SpeechRec();
+  speechRecognition.continuous = false;
+  speechRecognition.interimResults = false;
+  speechRecognition.lang = "en-US";
 
-  recognition.onresult = async (event) => {
+  speechRecognition.onstart = () => {
+    isRecording = true;
+  };
+
+  speechRecognition.onresult = async (event) => {
     const text = event.results?.[0]?.[0]?.transcript || "";
     if (!text) return;
 
     addLine("You", text);
 
-    // Try command
-    const cmd = parseCommand(text);
-
-    // If robot not reachable, still answer FAQ
-    const reachable = await pingRobot();
-
-    if (cmd.type === "target" && reachable) {
-      try {
-        await robotGoToTarget(cmd.name);
-      } catch (e) {
-        console.error(e);
-        addLine("Bridge Guide Bot", "I could not send the command to the robot.");
-        speak("I could not send the command to the robot.");
-      }
-      return;
-    }
-
-    if (cmd.type === "home" && reachable) {
-      try {
-        await robotGoHome();
-      } catch (e) {
-        console.error(e);
-        addLine("Bridge Guide", "I could not send the home command to the robot.");
-        speak("I could not send the home command to the robot.");
-      }
-      return;
-    }
-
-    // FAQ fallback
     const faq = matchFaqAnswer(text);
     if (faq?.a) {
       addLine("Bridge Guide Bot", faq.a);
       speak(faq.a);
     } else {
-      addLine("Bridge Guide Bot", "I didn’t understand. Try: “Take me to banana”, “Take me right”, or “Take me back to home/base”.");
-      speak("I didn’t understand. Try take me to banana, take me right, or take me back to home.");
+      const reply = `You said: ${text}`;
+      addLine("Bridge Guide Bot", reply);
+      speak(reply);
     }
   };
 
-  recognition.onerror = (e) => {
+  speechRecognition.onerror = (e) => {
     console.warn("Speech error:", e);
-    setStatus("⚠️ Speech error. Try again.");
+    setStatus("Speech error. Try again.");
+    isRecording = false;
   };
 
-  recognition.onend = () => {
+  speechRecognition.onend = () => {
     speakBtn.disabled = false;
+    isRecording = false;
   };
 }
 
 speakBtn?.addEventListener("click", () => {
-  if (!recognition) setupSpeech();
-  if (!recognition) return;
+  if (!speechRecognition) setupSpeech();
+  if (!speechRecognition) return;
+  if (isRecording) return;
 
   speakBtn.disabled = true;
-  setStatus("🎙️ Listening...");
-  recognition.start();
+  setStatus("Listening...");
+  speechRecognition.start();
 });
 
 pathsBtn?.addEventListener("click", () => {
-  addLine("Bridge Guide Bot", `Commands:
-- "Take me to banana"
-- "Take me to apple"
-- "Take me to orange"
-- "Take me right"
-- "Take me left"
-- "Take me back to home"
-- "Take me to base"`);
-  addLine("Bridge Guide Bot", `Robot IP: ${ROBOT_IP}`);
+  addLine("Bridge Guide Bot", "Say anything and I will speak it back, or ask a room question.");
 });
 
 // ====================== INIT ======================
 (async function init() {
   await loadFaqs();
-  addLine("Bridge Guide Bot", "Salam! I'm Bridge Guide Bot, your AI assistant. Tap SPEAK and say: 'Take me to banana' (or apple/orange), or 'Take me right/left'. You can also ask about our team!");
+  addLine("Bridge Guide Bot", "Salam! I'm Bridge Guide Bot. Tap SPEAK and talk to me.");
   speak("Salam. I'm Bridge Guide Bot. Tap speak to begin.");
-  await pingRobot();
 })();
 
 // ====================== THREE.JS AVATAR ======================
@@ -421,7 +298,7 @@ let pointerNorm = { x: 0, y: 0 };
 // Input modal state
 let activeInputMode = "mic";
 let resolveInput = null;
-// recognition is declared in SPEECH RECOGNITION section above
+// speechRecognition is declared in SPEECH RECOGNITION section above
 let isRecording = false;
 let currentTranscript = "";
 let currentUtterance = null;
@@ -734,6 +611,16 @@ function animate() {
     smileParts.forEach((p) => { p.mesh.morphTargetInfluences[p.index] = 0.25; });
     browParts.forEach((p) => { p.mesh.morphTargetInfluences[p.index] = 0.02; });
 
+    // Lip sync (word-boundary driven, with gentle motion)
+    let mouthTarget = 0;
+    if (isTalking) {
+      const pulse = now < mouthPulseUntil ? mouthPulseStrength : 0;
+      const chatter = 0.12 + 0.08 * Math.sin(t * 10);
+      mouthTarget = Math.min(1, chatter + pulse);
+    }
+    mouthOpen = THREE.MathUtils.lerp(mouthOpen, mouthTarget, 0.35);
+    mouthParts.forEach((p) => { p.mesh.morphTargetInfluences[p.index] = mouthOpen; });
+
     renderer.render(scene, camera);
   } else {
     // Only render scene without model (lighter)
@@ -1024,10 +911,10 @@ function stopAllSpeechActivity() {
   }
 
   // Stop modal recognition if active
-  if (recognition && isRecording) {
-    recognition.abort();
+  if (speechRecognition && isRecording) {
+    speechRecognition.abort();
     isRecording = false;
-    recognition = null;
+    speechRecognition = null;
   }
 
   // Stop speech synthesis
@@ -1380,20 +1267,20 @@ function startListening() {
   if (isRecording) return;
   stopListening();
 
-  recognition = new SpeechRecognition();
-  recognition.lang = "en-US";
-  recognition.interimResults = true;
-  recognition.maxAlternatives = 1;
-  recognition.continuous = false;
+  speechRecognition = new SpeechRecognition();
+  speechRecognition.lang = "en-US";
+  speechRecognition.interimResults = true;
+  speechRecognition.maxAlternatives = 1;
+  speechRecognition.continuous = false;
 
-  recognition.onstart = () => {
+  speechRecognition.onstart = () => {
     isRecording = true;
     currentTranscript = "";
     updateMicStatus("Listening...");
     setStatus("Listening...");
   };
 
-  recognition.onerror = (e) => {
+  speechRecognition.onerror = (e) => {
     isRecording = false;
     const isNoSpeech = e && e.error === "no-speech";
     setStatus(isNoSpeech ? "Waiting for your input..." : "Ready");
@@ -1406,7 +1293,7 @@ function startListening() {
     }
   };
 
-  recognition.onend = () => {
+  speechRecognition.onend = () => {
     isRecording = false;
     if (!resolveInput || activeInputMode !== "mic") return;
     if (currentTranscript) {
@@ -1417,7 +1304,7 @@ function startListening() {
     scheduleRetryListening();
   };
 
-  recognition.onresult = (event) => {
+  speechRecognition.onresult = (event) => {
     let transcript = "";
     for (let i = 0; i < event.results.length; i++) {
       transcript += event.results[i][0].transcript;
@@ -1432,16 +1319,16 @@ function startListening() {
     }
   };
 
-  recognition.start();
+  speechRecognition.start();
 }
 
 function stopListening() {
   clearRetryListening();
-  if (recognition && isRecording) {
-    recognition.stop();
+  if (speechRecognition && isRecording) {
+    speechRecognition.stop();
   }
   isRecording = false;
-  recognition = null;
+  speechRecognition = null;
 }
 
 function scheduleRetryListening() {
@@ -1506,7 +1393,7 @@ function unlockAudioForIOS() {
 function speakText(text) {
   return new Promise((resolve) => {
     if (!window.speechSynthesis) {
-      isTalking = false;
+      setSpeechActivity(false);
       setStopButton(false);
       return resolve();
     }
@@ -1540,26 +1427,24 @@ function actuallySpeak(text, resolve) {
     utterance.rate = Math.max(0.5, Math.min(settings.rate, 1.5));
 
     utterance.onstart = () => {
-      isTalking = true;
-      const len = text.length;
-      speakDuration = Math.max(1.5, len / CHAR_PER_SECOND);
-      speakStartTime = Date.now();
+      setSpeechActivity(true, text);
       setStopButton(true);
     };
 
     utterance.onend = () => {
-      isTalking = false;
+      setSpeechActivity(false);
       currentUtterance = null;
       setStopButton(false);
       resolve();
     };
 
     utterance.onerror = () => {
-      isTalking = false;
+      setSpeechActivity(false);
       currentUtterance = null;
       setStopButton(false);
       resolve();
     };
+    utterance.onboundary = handleSpeechBoundary;
 
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
