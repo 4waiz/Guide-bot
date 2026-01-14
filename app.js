@@ -30,9 +30,22 @@ const FETCH_TIMEOUT_MS = 4000;
 // ====================== UI ELEMENTS ======================
 const speakBtn = document.getElementById("btn-speak");
 const pathsBtn = document.getElementById("btn-paths");
-const stopSpeechBtn = document.getElementById("btn-stop-speech");
+const stopSpeechBtn = document.getElementById("stop-speech");
 const outputEl = document.getElementById("output");
 const statusEl = document.getElementById("status");
+const btnSpeak = document.getElementById("btn-speak");
+const btnPaths = document.getElementById("btn-paths");
+const inputModal = document.getElementById("input-modal");
+const inputClose = document.getElementById("input-close");
+const inputSubmit = document.getElementById("input-submit");
+const inputTextarea = document.getElementById("input-textarea");
+const inputModeButtons = document.querySelectorAll(".input-switch button");
+const onScreenKeyboard = document.getElementById("on-screen-keyboard");
+const keyboardOverlay = document.getElementById("keyboard-overlay");
+const inputTitle = document.getElementById("input-title");
+const inputSubtitle = document.getElementById("input-subtitle");
+const micStatus = document.getElementById("mic-status");
+const output = document.getElementById("output");
 
 // ====================== HELPERS ======================
 function addLine(who, text) {
@@ -68,6 +81,53 @@ async function robotGet(path) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
+
+// ====================== MISSING CONSTANTS ======================
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+const BAD_WORDS = ["fuck", "shit", "ass", "bitch", "damn", "hell", "dick", "crap"];
+
+const ROOM_RESPONSES = [
+  {
+    match: ["vip room", "vip lounge", "vip area"],
+    answer: "From the main lobby, take the elevator to Level 2. Walk past reception, the VIP room is the first door on the left with gold signage."
+  },
+  {
+    match: ["office 1", "office one"],
+    answer: "Office 1 is on Level 1. From the lobby, turn right at the main hallway, it's the second glass door on your right."
+  },
+  {
+    match: ["office 2", "office two"],
+    answer: "Office 2 is on Level 1. From the lobby, turn left at the hallway, it's the door next to the meeting pod."
+  },
+  {
+    match: ["classroom 1", "room 1", "class 1"],
+    answer: "Classroom 1 is on Level 1. From the lobby, go straight, then left at the T-junction. It is the first classroom on the right."
+  },
+  {
+    match: ["classroom 2", "room 2", "class 2"],
+    answer: "Classroom 2 is next to Classroom 1. From the lobby, go straight, left at the T-junction, then second classroom on the right."
+  },
+  {
+    match: ["classroom 3", "room 3", "class 3"],
+    answer: "Classroom 3 is on Level 1. From the lobby, go straight, right at the T-junction, then first classroom on the left."
+  },
+  {
+    match: ["classroom 4", "room 4", "class 4"],
+    answer: "Classroom 4 is beside Classroom 3. From the lobby, go straight, right at the T-junction, then second classroom on the left."
+  }
+];
+
+let FAQS = [];
+let faqsLoaded = false;
+let faqsLoadPromise = null;
+
+// ====================== SPEECH STATE ======================
+let isTalking = false;
+const CHAR_PER_SECOND = 12;
+let speakDuration = 0;
+let speakStartTime = 0;
+const micSupported = !!SpeechRecognition;
 
 // ====================== TTS (SPEAKING) ======================
 function speak(text) {
@@ -163,7 +223,7 @@ function parseCommand(text) {
 
 // ====================== ROBOT ACTIONS ======================
 async function robotGoToTarget(name) {
-  addLine("EDGE Guide", "Okay — follow the robot.");
+  addLine("Bridge Guide Bot", "Okay — follow the robot.");
   speak("Okay. Follow the robot.");
 
   await robotGet(`/api/go?name=${encodeURIComponent(name)}`);
@@ -171,17 +231,17 @@ async function robotGoToTarget(name) {
   const st = await waitForRobotToFinish();
 
   if (st?.lastStopReason === "obstacle") {
-    addLine("EDGE Guide", "Obstacle detected — robot stopped.");
+    addLine("Bridge Guide Bot", "Obstacle detected — robot stopped.");
     speak("Obstacle detected. Robot stopped.");
     return;
   }
 
-  addLine("EDGE Guide", "You have reached.");
+  addLine("Bridge Guide Bot", "You have reached.");
   speak("You have reached.");
 }
 
 async function robotGoHome() {
-  addLine("EDGE Guide", "Okay — taking you back to home.");
+  addLine("Bridge Guide Bot", "Okay — taking you back to home.");
   speak("Okay. Taking you back to home.");
 
   await robotGet(`/api/home`);
@@ -189,12 +249,12 @@ async function robotGoHome() {
   const st = await waitForRobotToFinish();
 
   if (st?.lastStopReason === "obstacle") {
-    addLine("EDGE Guide", "Obstacle detected — robot stopped.");
+    addLine("Bridge Guide Bot", "Obstacle detected — robot stopped.");
     speak("Obstacle detected. Robot stopped.");
     return;
   }
 
-  addLine("EDGE Guide", "We are back at home base.");
+  addLine("Bridge Guide Bot", "We are back at home base.");
   speak("We are back at home base.");
 }
 
@@ -260,18 +320,18 @@ function setupSpeech() {
         await robotGoToTarget(cmd.name);
       } catch (e) {
         console.error(e);
-        addLine("EDGE Guide", "I could not send the command to the robot.");
+        addLine("Bridge Guide Bot", "I could not send the command to the robot.");
         speak("I could not send the command to the robot.");
       }
       return;
     }
 
-if (cmd.type === "home" && reachable) {
+    if (cmd.type === "home" && reachable) {
       try {
         await robotGoHome();
       } catch (e) {
         console.error(e);
-        addLine("EDGE Guide", "I could not send the home command to the robot.");
+        addLine("Bridge Guide", "I could not send the home command to the robot.");
         speak("I could not send the home command to the robot.");
       }
       return;
@@ -280,10 +340,10 @@ if (cmd.type === "home" && reachable) {
     // FAQ fallback
     const faq = matchFaqAnswer(text);
     if (faq?.a) {
-      addLine("EDGE Guide", faq.a);
+      addLine("Bridge Guide Bot", faq.a);
       speak(faq.a);
     } else {
-      addLine("EDGE Guide", "I didn’t understand. Try: “Take me to banana”, “Take me right”, or “Take me back to home/base”.");
+      addLine("Bridge Guide Bot", "I didn’t understand. Try: “Take me to banana”, “Take me right”, or “Take me back to home/base”.");
       speak("I didn’t understand. Try take me to banana, take me right, or take me back to home.");
     }
   };
@@ -308,7 +368,7 @@ speakBtn?.addEventListener("click", () => {
 });
 
 pathsBtn?.addEventListener("click", () => {
-  addLine("EDGE Guide", `Commands:
+  addLine("Bridge Guide Bot", `Commands:
 - "Take me to banana"
 - "Take me to apple"
 - "Take me to orange"
@@ -316,14 +376,14 @@ pathsBtn?.addEventListener("click", () => {
 - "Take me left"
 - "Take me back to home"
 - "Take me to base"`);
-  addLine("EDGE Guide", `Robot IP: ${ROBOT_IP}`);
+  addLine("Bridge Guide Bot", `Robot IP: ${ROBOT_IP}`);
 });
 
 // ====================== INIT ======================
 (async function init() {
   await loadFaqs();
-  addLine("EDGE Guide", "Salam! I'm your AI assistant. Tap SPEAK and say: 'Take me to banana' (or apple/orange), or 'Take me right/left'.");
-  speak("Salam. Tap speak and say, take me to banana.");
+  addLine("Bridge Guide Bot", "Salam! I'm Bridge Guide Bot, your AI assistant. Tap SPEAK and say: 'Take me to banana' (or apple/orange), or 'Take me right/left'. You can also ask about our team!");
+  speak("Salam. I'm Bridge Guide Bot. Tap speak to begin.");
   await pingRobot();
 })();
 
@@ -358,9 +418,6 @@ let nextIdleHeadTurn = Date.now() + 3500;
 let pointerInAvatar = false;
 let pointerNorm = { x: 0, y: 0 };
 
-// Avatar selection
-let currentAvatarId = DEFAULT_AVATAR_ID;
-
 // Input modal state
 let activeInputMode = "mic";
 let resolveInput = null;
@@ -378,6 +435,14 @@ let voiceFirstRecognition = null;
 let isVoiceFirstListening = false;
 let voiceFirstTranscript = "";
 let currentVoiceMode = "speak"; // "speak" or "paths"
+
+// =======================
+//  AVATAR PICKER
+// =======================
+function setupAvatarPicker() {
+  // Avatar picker already set up in the HTML section below
+  // This function is just a placeholder for initialization
+}
 
 // =======================
 //  INIT
@@ -749,7 +814,7 @@ function startVoiceFirstListening() {
       setStopButton(false);
       const buttonLabel = currentVoiceMode === "paths" ? "Paths" : "Speak";
       if (output) {
-        output.innerHTML = `<strong>EDGE Guide:</strong> I didn't catch that. Tap ${buttonLabel} and try again.`;
+        output.innerHTML = `<strong>Bridge Guide Bot:</strong> I didn't catch that. Tap ${buttonLabel} and try again.`;
       }
     }
 
@@ -771,7 +836,7 @@ function startVoiceFirstListening() {
       setGlowState("idle");
       const buttonLabel = currentVoiceMode === "paths" ? "Paths" : "Speak";
       if (output) {
-        output.innerHTML = `<strong>EDGE Guide:</strong> I didn't hear anything. Tap ${buttonLabel} and try again.`;
+        output.innerHTML = `<strong>Bridge Guide Bot:</strong> I didn't hear anything. Tap ${buttonLabel} and try again.`;
       }
     } else {
       setStatus(`Mic error: ${event.error}`);
@@ -801,7 +866,7 @@ async function processVoiceFirstInput(userInput) {
     // Check moderation
     const moderationIssue = moderateInput(userInput);
     if (moderationIssue) {
-      const bot = formatTextForOutput("EDGE Guide", moderationIssue);
+      const bot = formatTextForOutput("Bridge Guide Bot", moderationIssue);
       output.innerHTML = bot;
       setStatus("Ready");
       setGlowState("idle");
@@ -814,7 +879,7 @@ async function processVoiceFirstInput(userInput) {
     const roomAnswer = getRoomAnswer(userInput);
     if (roomAnswer) {
       const you = formatTextForOutput("You", userInput);
-      const bot = formatTextForOutput("EDGE Guide", roomAnswer);
+      const bot = formatTextForOutput("Bridge Guide Bot", roomAnswer);
       output.innerHTML = `${you}<br><br>${bot}`;
       setStatus("Speaking...");
       setGlowState("speaking");
@@ -830,14 +895,14 @@ async function processVoiceFirstInput(userInput) {
     setStatus("Thinking...");
     setGlowState("thinking");
     const you = formatTextForOutput("You", userInput);
-    output.innerHTML = `${you}<br><br><strong>EDGE Guide:</strong> <span style="color:#64748b; font-style:italic;">Thinking...</span>`;
+    output.innerHTML = `${you}<br><br><strong>Bridge Guide Bot:</strong> <span style="color:#64748b; font-style:italic;">Thinking...</span>`;
 
     // Get response using the current mode for system prompt
     const systemPrompt = buildSystemPrompt(currentVoiceMode);
     const reply = await callOpenAI(systemPrompt, userInput);
 
     // Display response
-    const bot = formatTextForOutput("EDGE Guide", reply);
+    const bot = formatTextForOutput("Bridge Guide Bot", reply);
     output.innerHTML = `${you}<br><br>${bot}`;
 
     // Speak the response
@@ -906,7 +971,7 @@ async function handleInteraction(kind) {
 
     const moderationIssue = moderateInput(userInput.trim());
     if (moderationIssue) {
-      const bot = formatTextForOutput("EDGE Guide", moderationIssue);
+      const bot = formatTextForOutput("Bridge Guide Bot", moderationIssue);
       output.innerHTML = bot;
       setStatus("Ready");
       return;
@@ -915,7 +980,7 @@ async function handleInteraction(kind) {
     const roomAnswer = getRoomAnswer(userInput);
     if (roomAnswer) {
       const you = formatTextForOutput("You", userInput.trim());
-      const bot = formatTextForOutput("EDGE Guide", roomAnswer);
+      const bot = formatTextForOutput("Bridge Guide Bot", roomAnswer);
       output.innerHTML = `${you}<br><br>${bot}`;
       setStatus("Speaking...");
       await speakText(roomAnswer);
@@ -928,7 +993,7 @@ async function handleInteraction(kind) {
     const reply = await callOpenAI(systemPrompt, userInput.trim());
 
     const you = formatTextForOutput("You", userInput.trim());
-    const bot = formatTextForOutput("EDGE Guide", reply);
+    const bot = formatTextForOutput("Bridge Guide Bot", reply);
     output.innerHTML = `${you}<br><br>${bot}`;
 
     setStatus("Speaking...");
@@ -948,9 +1013,9 @@ async function handleInteraction(kind) {
 
 function buildSystemPrompt(kind) {
   if (kind === "paths") {
-    return "You are an indoor navigation assistant at EDGE. The user is starting from the main lobby. Reply only in English with short, step-by-step walking directions within the building. Max 5 steps.";
+    return "You are Bridge Guide Bot, an indoor navigation assistant at EDGE. The user is starting from the main lobby. Reply only in English with short, step-by-step walking directions within the building. Max 5 steps.";
   }
-  return "You are a friendly AI guide in a technology training center called EDGE. Reply only in English. Keep answers concise and conversational.";
+  return "You are Bridge Guide Bot, a friendly AI guide in a technology training center called EDGE. Reply only in English. Keep answers concise and conversational.";
 }
 
 function setButtonsDisabled(disabled) {
@@ -969,15 +1034,15 @@ function getSmallTalkAnswer(userMessage) {
 
   const greetings = ["hello", "hi", "hey", "salam", "good morning", "good evening"];
   if (greetings.some((g) => txt.startsWith(g) || txt.includes(` ${g}`))) {
-    return "Hi there! I am the EDGE guide. Ask me about the Learning & Innovation Factory programs, labs, or visits.";
+    return "Hi there! I am Bridge Guide Bot. Ask me about the EDGE Learning & Innovation Factory programs, labs, or visits.";
   }
 
   if (txt.includes("how are you")) {
     return "I am doing great and ready to help you learn about the EDGE Learning & Innovation Factory.";
   }
 
-  if (txt.includes("who are you") || txt.includes("what are you")) {
-    return "I am the EDGE Learning & Innovation Factory guide. I can tell you about programs, labs, visits, and training options.";
+  if (txt.includes("who are you") || txt.includes("what are you") || txt.includes("your name")) {
+    return "I am Bridge Guide Bot, your AI assistant for the EDGE Learning & Innovation Factory. I can tell you about programs, labs, visits, training options, and answer questions about our amazing team including Babu and Awaiz!";
   }
 
   if (txt.includes("thank")) {

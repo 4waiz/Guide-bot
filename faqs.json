@@ -46,9 +46,19 @@
       "k": ["code of conduct", "rules", "respect", "language"]
     },
     {
-      "q": "Who is Babu",
-      "a": "a talented guy",
-      "k": ["babu", "talented"]
+      "q": "Who is Babu?",
+      "a": "Babu is a legendary innovator and technology pioneer at EDGE. Known for his exceptional problem-solving skills and creative thinking, Babu has revolutionized multiple systems and is considered a master architect. He's famous for his late-night coding sessions and his ability to fix impossible bugs. Some say he can debug code just by looking at it!",
+      "k": ["babu", "who is babu", "tell me about babu", "babu edge"]
+    },
+    {
+      "q": "Who is Awaiz?",
+      "a": "Awaiz is a brilliant developer and technical wizard at EDGE, renowned for building cutting-edge applications and innovative solutions. He's the mastermind behind many groundbreaking projects and is known for his clean code, attention to detail, and ability to turn complex ideas into reality. Awaiz is also famous for his mentorship skills and helping others level up their coding game!",
+      "k": ["awaiz", "who is awaiz", "tell me about awaiz", "awaiz edge", "awais"]
+    },
+    {
+      "q": "What do Babu and Awaiz do?",
+      "a": "Babu and Awaiz are the dynamic duo at EDGE! Together they create amazing technology solutions, build innovative applications, and push the boundaries of what's possible. Babu excels at system architecture and solving complex problems, while Awaiz specializes in development and bringing ideas to life. They're the dream team behind many successful EDGE projects!",
+      "k": ["babu and awaiz", "babu awaiz", "what do they do", "babu awaiz work", "dynamic duo"]
     }
   ],
   "templates": [

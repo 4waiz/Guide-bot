@@ -1,7 +1,7 @@
 {
-  "name": "guide-bot",
+  "name": "bridge-guide-bot",
   "version": "1.0.0",
-  "description": "EDGE AI Guide - 3D avatar chatbot",
+  "description": "Bridge Guide Bot - 3D avatar chatbot for EDGE Learning & Innovation Factory",
   "scripts": {
     "dev": "npx serve .",
     "start": "npx serve ."
