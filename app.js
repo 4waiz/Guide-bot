@@ -40,6 +40,7 @@ const inputTitle = document.getElementById("input-title");
 const inputSubtitle = document.getElementById("input-subtitle");
 const micStatus = document.getElementById("mic-status");
 const output = document.getElementById("output");
+const avatarThumbnailsContainer = document.querySelector(".avatar-thumbnails-container");
 
 // ====================== HELPERS ======================
 function addLine(who, text) {
@@ -119,6 +120,7 @@ let faqsLoadPromise = null;
 // ====================== SPEECH STATE ======================
 let isTalking = false;
 const CHAR_PER_SECOND = 12;
+const SPEECH_RATE_MULT = 1.35;
 let speakDuration = 0;
 let speakStartTime = 0;
 const micSupported = !!SpeechRecognition;
@@ -132,12 +134,15 @@ function speak(text) {
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    // Try to pick an English voice (or Arabic if you prefer)
-    const voices = window.speechSynthesis.getVoices();
-    const v = voices.find(x => /en/i.test(x.lang)) || voices[0];
+    if (window.speechSynthesis) {
+      availableVoices = window.speechSynthesis.getVoices() || [];
+    }
+    if (!preferredVoice) selectVoiceForAvatar(currentAvatarId);
+    const v = preferredVoice || availableVoices.find(x => /en/i.test(x.lang)) || availableVoices[0];
     if (v) u.voice = v;
-    u.rate = 1.0;
-    u.pitch = 1.0;
+    const settings = avatarVoiceSettings[currentAvatarId] || { pitch: 1.0, rate: 1.0 };
+    u.rate = Math.max(0.8, Math.min(settings.rate * SPEECH_RATE_MULT, 2.0));
+    u.pitch = Math.max(0.7, Math.min(settings.pitch, 1.6));
     u.onstart = () => {
       setSpeechActivity(true, text);
     };
@@ -321,6 +326,47 @@ function setupAvatarPicker() {
   // This function is just a placeholder for initialization
 }
 
+function setupCarouselScroll() {
+  if (!avatarThumbnailsContainer) return;
+  let isDragging = false;
+  let startX = 0;
+  let startScroll = 0;
+
+  avatarThumbnailsContainer.style.cursor = "grab";
+
+  avatarThumbnailsContainer.addEventListener("pointerdown", (e) => {
+    isDragging = true;
+    startX = e.clientX;
+    startScroll = avatarThumbnailsContainer.scrollLeft;
+    avatarThumbnailsContainer.setPointerCapture(e.pointerId);
+    avatarThumbnailsContainer.style.cursor = "grabbing";
+  });
+
+  avatarThumbnailsContainer.addEventListener("pointermove", (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    avatarThumbnailsContainer.scrollLeft = startScroll - dx;
+    e.preventDefault();
+  });
+
+  const stopDrag = (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    avatarThumbnailsContainer.releasePointerCapture(e.pointerId);
+    avatarThumbnailsContainer.style.cursor = "grab";
+  };
+
+  avatarThumbnailsContainer.addEventListener("pointerup", stopDrag);
+  avatarThumbnailsContainer.addEventListener("pointercancel", stopDrag);
+
+  avatarThumbnailsContainer.addEventListener("wheel", (e) => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      avatarThumbnailsContainer.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }
+  }, { passive: false });
+}
+
 // =======================
 //  INIT
 // =======================
@@ -332,6 +378,7 @@ setGlowState("idle");
 setupButtons();
 setupInputModal();
 initVoiceSelection();
+setupCarouselScroll();
 
 // Load avatar immediately after DOM is ready
 if (document.readyState === 'complete') {
@@ -421,6 +468,7 @@ function loadAvatar(avatarId) {
   if (currentAvatarId === avatar.id && model) return;
 
   currentAvatarId = avatar.id;
+  selectVoiceForAvatar(currentAvatarId);
 
   document.querySelectorAll(".avatar-thumb").forEach((t) => {
     t.classList.toggle("selected", t.dataset.avatar === avatar.id);
@@ -1416,6 +1464,7 @@ function speakText(text) {
 function actuallySpeak(text, resolve) {
     const utterance = new SpeechSynthesisUtterance(text);
     currentUtterance = utterance;
+    if (!preferredVoice) selectVoiceForAvatar(currentAvatarId);
     const voice = preferredVoice || null;
     const voiceLang = voice && voice.lang ? voice.lang : "en-US";
     utterance.voice = voice;
@@ -1423,8 +1472,8 @@ function actuallySpeak(text, resolve) {
 
     // Get avatar-specific voice settings for distinct voices
     const settings = avatarVoiceSettings[currentAvatarId] || { pitch: 1.0, rate: 1.0 };
-    utterance.pitch = Math.max(0.5, Math.min(settings.pitch, 2.0));
-    utterance.rate = Math.max(0.5, Math.min(settings.rate, 1.5));
+    utterance.pitch = Math.max(0.6, Math.min(settings.pitch, 1.7));
+    utterance.rate = Math.max(0.8, Math.min(settings.rate * SPEECH_RATE_MULT, 2.0));
 
     utterance.onstart = () => {
       setSpeechActivity(true, text);
