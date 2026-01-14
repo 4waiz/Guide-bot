@@ -44,6 +44,11 @@
       "q": "Do you have a code of conduct?",
       "a": "Yes. We keep conversations respectful and professional. Offensive language is not allowed.",
       "k": ["code of conduct", "rules", "respect", "language"]
+    },
+    {
+      "q": "Who is Babu",
+      "a": "a talented guy",
+      "k": ["babu", "talented"]
     }
   ],
   "templates": [
