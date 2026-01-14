@@ -55,8 +55,8 @@ function addLine(who, text) {
   outputEl.scrollTop = outputEl.scrollHeight;
 }
 
-function setStatus(txt) {
-  statusEl.textContent = txt;
+function setStatus(text) {
+  if (statusEl) statusEl.textContent = text || "";
 }
 
 function sleep(ms) {
@@ -289,7 +289,7 @@ async function pingRobot() {
 setInterval(pingRobot, STATUS_POLL_MS);
 
 // ====================== SPEECH RECOGNITION ======================
-let recognition = null;
+let recognition = null;  // Global speech recognition instance
 
 function setupSpeech() {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -421,7 +421,7 @@ let pointerNorm = { x: 0, y: 0 };
 // Input modal state
 let activeInputMode = "mic";
 let resolveInput = null;
-let recognition = null;
+// recognition is declared in SPEECH RECOGNITION section above
 let isRecording = false;
 let currentTranscript = "";
 let currentUtterance = null;
@@ -456,11 +456,16 @@ setupButtons();
 setupInputModal();
 initVoiceSelection();
 
-// Load avatar asynchronously in the background
-setTimeout(() => {
+// Load avatar immediately after DOM is ready
+if (document.readyState === 'complete') {
   initAvatar();
   setupAvatarPicker();
-}, 100);
+} else {
+  window.addEventListener('load', () => {
+    initAvatar();
+    setupAvatarPicker();
+  });
+}
 
 // =======================
 //  AVATAR INIT
@@ -499,16 +504,10 @@ function initAvatar() {
   // Start animation loop immediately for smooth background
   startAnimationLoop();
 
-  // Load avatar with a slight delay to prioritize page interactivity
-  if (window.requestIdleCallback) {
-    requestIdleCallback(() => {
-      loadAvatar(DEFAULT_AVATAR_ID);
-    }, { timeout: 200 });
-  } else {
-    setTimeout(() => {
-      loadAvatar(DEFAULT_AVATAR_ID);
-    }, 150);
-  }
+  // Load avatar immediately - optimizations are in place
+  setTimeout(() => {
+    loadAvatar(DEFAULT_AVATAR_ID);
+  }, 50);
 
   window.addEventListener("resize", () => {
     if (!camera || !renderer) return;
@@ -530,10 +529,18 @@ function initAvatar() {
 }
 
 function loadAvatar(avatarId) {
-  if (!scene) return;
+  if (!scene) {
+    console.error("Scene not initialized");
+    if (avatarLoading) avatarLoading.style.display = "none";
+    return;
+  }
 
   const avatar = AVATARS.find((a) => a.id === avatarId) || AVATARS[0];
-  if (!avatar) return;
+  if (!avatar) {
+    console.error("Avatar not found:", avatarId);
+    if (avatarLoading) avatarLoading.style.display = "none";
+    return;
+  }
   if (currentAvatarId === avatar.id && model) return;
 
   currentAvatarId = avatar.id;
@@ -546,6 +553,20 @@ function loadAvatar(avatarId) {
     avatarLoading.style.display = "flex";
     avatarLoading.textContent = `Loading ${avatar.label}...`;
   }
+
+  console.log("Loading avatar:", avatar.label, "from", `${AVATAR_BASE_PATH}${avatar.file}`);
+
+  // Add timeout to hide loading screen if avatar takes too long (fallback)
+  // This ensures the app is usable even if avatar doesn't load
+  let loadingTimeout = setTimeout(() => {
+    if (avatarLoading && avatarLoading.style.display !== "none") {
+      console.warn("Avatar loading timeout - hiding loading screen");
+      avatarLoading.textContent = "Ready - Avatar loading in background";
+      setTimeout(() => {
+        if (avatarLoading) avatarLoading.style.display = "none";
+      }, 1000);
+    }
+  }, 3000); // 3 seconds max before hiding
 
   mouthParts = [];
   eyeParts = [];
@@ -567,7 +588,10 @@ function loadAvatar(avatarId) {
   loader.load(
     `${AVATAR_BASE_PATH}${avatar.file}`,
     (gltf) => {
+      console.log("Avatar loaded successfully:", avatar.label);
+
       if (avatar.id !== currentAvatarId) {
+        console.log("Avatar changed during load, disposing:", avatar.id);
         disposeModel(gltf.scene);
         return;
       }
@@ -587,6 +611,9 @@ function loadAvatar(avatarId) {
       });
 
       scene.add(model);
+
+      // Clear loading timeout and hide loading screen
+      if (loadingTimeout) clearTimeout(loadingTimeout);
       if (avatarLoading) {
         avatarLoading.style.display = "none";
       }
@@ -632,13 +659,24 @@ function loadAvatar(avatarId) {
       if (avatarLoading && progress.total > 0) {
         const percent = Math.round((progress.loaded / progress.total) * 100);
         avatarLoading.textContent = `Loading ${avatar.label}... ${percent}%`;
+        console.log(`Loading progress: ${percent}%`);
+      } else if (avatarLoading) {
+        console.log("Loading progress (no total):", progress.loaded);
       }
     },
     (err) => {
       console.error("Error loading GLB:", err);
+
+      // Clear loading timeout
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+
       if (avatarLoading) {
-        avatarLoading.textContent = "Ready (Avatar not loaded)";
+        avatarLoading.textContent = "Ready";
         avatarLoading.style.fontSize = "0.9rem";
+        // Hide loading screen after showing error briefly
+        setTimeout(() => {
+          if (avatarLoading) avatarLoading.style.display = "none";
+        }, 1500);
       }
     }
   );
@@ -1072,10 +1110,6 @@ function buildSystemPrompt(kind) {
 function setButtonsDisabled(disabled) {
   if (btnSpeak) btnSpeak.disabled = disabled;
   if (btnPaths) btnPaths.disabled = disabled;
-}
-
-function setStatus(text) {
-  if (statusEl) statusEl.textContent = text || "";
 }
 
 // --- Local FAQ engine ---
@@ -1649,22 +1683,6 @@ function selectVoiceForAvatar(avatarId) {
     availableVoices.find((v) => v.lang && v.lang.toLowerCase().startsWith("en")) ||
     availableVoices[0] ||
     null;
-}
-
-function disposeModel(obj) {
-  obj.traverse((child) => {
-    if (child.isMesh) {
-      if (child.geometry && child.geometry.dispose) {
-        child.geometry.dispose();
-      }
-      const mat = child.material;
-      if (Array.isArray(mat)) {
-        mat.forEach((m) => m && m.dispose && m.dispose());
-      } else if (mat && mat.dispose) {
-        mat.dispose();
-      }
-    }
-  });
 }
 
 function escapeHtml(str) {
