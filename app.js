@@ -120,7 +120,7 @@ let faqsLoadPromise = null;
 // ====================== SPEECH STATE ======================
 let isTalking = false;
 const CHAR_PER_SECOND = 12;
-const SPEECH_RATE_MULT = 1.35;
+const SPEECH_RATE_MULT = 1.0;
 let speakDuration = 0;
 let speakStartTime = 0;
 const micSupported = !!SpeechRecognition;
@@ -331,20 +331,27 @@ function setupCarouselScroll() {
   let isDragging = false;
   let startX = 0;
   let startScroll = 0;
+  let dragStarted = false;
+  const dragThreshold = 6;
 
   avatarThumbnailsContainer.style.cursor = "grab";
 
   avatarThumbnailsContainer.addEventListener("pointerdown", (e) => {
     isDragging = true;
+    dragStarted = false;
     startX = e.clientX;
     startScroll = avatarThumbnailsContainer.scrollLeft;
-    avatarThumbnailsContainer.setPointerCapture(e.pointerId);
     avatarThumbnailsContainer.style.cursor = "grabbing";
   });
 
   avatarThumbnailsContainer.addEventListener("pointermove", (e) => {
     if (!isDragging) return;
     const dx = e.clientX - startX;
+    if (!dragStarted && Math.abs(dx) < dragThreshold) return;
+    if (!dragStarted) {
+      dragStarted = true;
+      avatarThumbnailsContainer.setPointerCapture(e.pointerId);
+    }
     avatarThumbnailsContainer.scrollLeft = startScroll - dx;
     e.preventDefault();
   });
@@ -352,8 +359,11 @@ function setupCarouselScroll() {
   const stopDrag = (e) => {
     if (!isDragging) return;
     isDragging = false;
-    avatarThumbnailsContainer.releasePointerCapture(e.pointerId);
+    if (dragStarted) {
+      avatarThumbnailsContainer.releasePointerCapture(e.pointerId);
+    }
     avatarThumbnailsContainer.style.cursor = "grab";
+    dragStarted = false;
   };
 
   avatarThumbnailsContainer.addEventListener("pointerup", stopDrag);
