@@ -17,9 +17,9 @@ const AVATARS = [
   { id: "sohel", label: "Sohel", file: "sohel.glb", gender: "male" },
   { id: "maya", label: "Maya", file: "maya.glb", gender: "female" },
   { id: "rose", label: "Rose", file: "rose.glb", gender: "female" },
-  { id: "shonith", label: "Shonith", file: "shonith.glb", gender: "male" },
+  { id: "awaiz", label: "Awaiz", file: "awaiz.glb", gender: "male" },
   { id: "tom", label: "Tom", file: "tom.glb", gender: "male" },
-  { id: "wei", label: "Wei", file: "wei.glb", gender: "female" },
+  { id: "babu", label: "Babu", file: "babu.glb", gender: "male" },
   { id: "zara", label: "Zara", file: "zara.glb", gender: "female" },
   { id: "zola", label: "Zola", file: "zola.glb", gender: "female" }
 ];
@@ -1618,9 +1618,9 @@ const avatarVoiceSettings = {
   sohel: { pitch: 0.8, rate: 0.88, gender: "male" },
   maya: { pitch: 1.25, rate: 1.02, gender: "female" },
   rose: { pitch: 1.1, rate: 0.98, gender: "female" },
-  shonith: { pitch: 0.9, rate: 0.95, gender: "male" },
+  awaiz: { pitch: 0.9, rate: 0.95, gender: "male" },
   tom: { pitch: 0.75, rate: 0.9, gender: "male" },
-  wei: { pitch: 1.18, rate: 1.0, gender: "female" },
+  babu: { pitch: 0.88, rate: 0.95, gender: "male" },
   zara: { pitch: 1.22, rate: 0.97, gender: "female" },
   zola: { pitch: 1.12, rate: 1.03, gender: "female" }
 };
@@ -1671,7 +1671,7 @@ const avatarVoiceProfiles = {
     ]
   },
   // Male - Indian
-  shonith: {
+  awaiz: {
     gender: "male",
     lang: ["en-IN", "hi-IN"],
     names: [
@@ -1713,13 +1713,14 @@ const avatarVoiceProfiles = {
       "Karen", "Catherine"
     ]
   },
-  // Female - Chinese-English
-  wei: {
-    gender: "female",
+  // Male - Chinese-English
+  babu: {
+    gender: "male",
     lang: ["zh-CN", "en-US"],
     names: [
-      "Microsoft Xiaoxiao Online (Natural) - Chinese (Mainland)",
-      "Ting-Ting", "Mei-Jia", "Google 普通话（中国大陆）"
+      "Microsoft Yunxi Online (Natural) - Chinese (Mainland)",
+      "Microsoft Yunyang Online (Natural) - Chinese (Mainland)",
+      "Google 普通话（中国大陆）"
     ]
   },
   // Female - Indian
