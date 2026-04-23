@@ -10,6 +10,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 
+  <script>
+    // Apply saved theme BEFORE stylesheets paint to avoid a flash.
+    (function () {
+      try {
+        var saved = localStorage.getItem("bridgebot-theme");
+        var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var theme = saved || (prefersDark ? "dark" : "light");
+        if (theme === "dark") document.documentElement.classList.add("dark");
+      } catch (_) {}
+    })();
+  </script>
+
   <script type="importmap">
     {
       "imports": {
@@ -26,7 +38,7 @@
       --bg-blob-1: radial-gradient(520px at 14% 16%, rgba(255, 198, 110, 0.32), transparent 55%);
       --bg-blob-2: radial-gradient(540px at 80% 12%, rgba(255, 255, 255, 0.75), transparent 52%);
       --bg-blob-3: radial-gradient(620px at 74% 82%, rgba(118, 191, 255, 0.28), transparent 62%);
-      
+
       /* Orange Gloss Palette */
       --orange-light: #ffcd50;
       --orange-mid: #ff9f00;
@@ -39,10 +51,74 @@
       --glass-border: rgba(255,255,255,0.55);
       --glass-panel: linear-gradient(145deg, rgba(255,255,255,0.72), rgba(255,255,255,0.32));
       --glass-highlight: rgba(255,255,255,0.85);
-      
+      --pill-bg: linear-gradient(135deg, rgba(255,255,255,0.78), rgba(255,255,255,0.42));
+      --pill-border: rgba(255,255,255,0.7);
+      --pill-sep: rgba(15,23,42,0.12);
+      --chip-bg: rgba(255,255,255,0.55);
+      --chip-border: rgba(15,23,42,0.12);
+      --output-strong: #d97706;
+      --avatar-loading-bg: radial-gradient(circle at 35% 35%, rgba(249, 251, 255, 0.8), rgba(215, 223, 232, 0.6) 70%);
+
       --text-main: #334155;
       --text-muted: #64748b;
     }
+
+    :root.dark {
+      --bg-gradient: linear-gradient(135deg, #0b1220 0%, #0f172a 40%, #111827 100%);
+      --bg-blob-1: radial-gradient(520px at 14% 16%, rgba(255, 159, 0, 0.18), transparent 55%);
+      --bg-blob-2: radial-gradient(540px at 80% 12%, rgba(56, 92, 160, 0.35), transparent 52%);
+      --bg-blob-3: radial-gradient(620px at 74% 82%, rgba(30, 58, 138, 0.35), transparent 62%);
+
+      --shadow-deep: 0 25px 50px -12px rgba(0,0,0,0.6);
+      --glass-shadow: 0 20px 55px -18px rgba(0, 0, 0, 0.6);
+      --glass-border: rgba(255,255,255,0.08);
+      --glass-panel: linear-gradient(145deg, rgba(30,41,59,0.72), rgba(15,23,42,0.55));
+      --glass-highlight: rgba(255,255,255,0.1);
+      --pill-bg: linear-gradient(135deg, rgba(30,41,59,0.78), rgba(15,23,42,0.55));
+      --pill-border: rgba(255,255,255,0.08);
+      --pill-sep: rgba(255,255,255,0.12);
+      --chip-bg: rgba(30,41,59,0.55);
+      --chip-border: rgba(255,255,255,0.1);
+      --output-strong: #fbbf24;
+      --avatar-loading-bg: radial-gradient(circle at 35% 35%, rgba(30,41,59,0.85), rgba(15,23,42,0.9) 70%);
+
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+    }
+
+    /* Theme toggle button (sun/moon) */
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--chip-border);
+      background: var(--chip-bg);
+      color: var(--text-main);
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+    .theme-toggle:hover { transform: rotate(-12deg); }
+    .theme-toggle:active { transform: scale(0.92); }
+    .theme-toggle svg { width: 16px; height: 16px; display: block; }
+    .theme-toggle .icon-moon { display: none; }
+    :root.dark .theme-toggle .icon-sun { display: none; }
+    :root.dark .theme-toggle .icon-moon { display: block; }
+
+    /* Dark-mode tweaks that don't map cleanly to variables */
+    :root.dark #output strong { color: var(--output-strong); }
+    :root.dark #output { text-shadow: none; }
+    :root.dark .status-state { color: #67e8f9; }
+    :root.dark .status-bars span { background: #67e8f9; }
+    :root.dark .battery-fill { background: #67e8f9; }
+    :root.dark .battery-body { border-color: rgba(255,255,255,0.35); }
+    :root.dark .battery-body::after { background: rgba(255,255,255,0.35); }
+    :root.dark .status-brand { color: #f1f5f9; }
+    :root.dark #status-row { background: rgba(255,255,255,0.04); border-top-color: rgba(255,255,255,0.08); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
+    :root.dark .top-logo { filter: drop-shadow(0 4px 14px rgba(255,159,0,0.35)); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -331,8 +407,8 @@
       gap: 10px;
       padding: 8px 14px;
       border-radius: 999px;
-      background: linear-gradient(135deg, rgba(255,255,255,0.78), rgba(255,255,255,0.42));
-      border: 1px solid rgba(255,255,255,0.7);
+      background: var(--pill-bg);
+      border: 1px solid var(--pill-border);
       box-shadow:
         0 10px 24px -16px rgba(15,23,42,0.35),
         inset 0 1px 0 rgba(255,255,255,0.9);
@@ -345,7 +421,7 @@
     .status-pill .sep {
       width: 1px;
       height: 14px;
-      background: rgba(15,23,42,0.12);
+      background: var(--pill-sep);
       display: inline-block;
     }
 
@@ -422,8 +498,8 @@
       letter-spacing: 0.14em;
       padding: 3px 10px;
       border-radius: 999px;
-      border: 1px solid rgba(15,23,42,0.12);
-      background: rgba(255,255,255,0.55);
+      border: 1px solid var(--chip-border);
+      background: var(--chip-bg);
       color: var(--text-main);
       cursor: pointer;
     }
@@ -598,7 +674,7 @@
       color: var(--text-muted);
       font-size: 0.95rem;
       gap: 12px;
-      background: radial-gradient(circle at 35% 35%, rgba(249, 251, 255, 0.8), rgba(215, 223, 232, 0.6) 70%);
+      background: var(--avatar-loading-bg);
     }
 
     #avatar-loading::after {
@@ -1341,6 +1417,16 @@
         </div>
 
         <div class="status-pill">
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <span class="sep" aria-hidden="true"></span>
           <span class="status-chip">
             <span class="status-dot online" aria-hidden="true"></span>
             <span>Online</span>
@@ -1366,7 +1452,7 @@
       <!-- Top Buttons -->
       <div class="top-controls">
         <button id="btn-speak" class="glassy-btn-orange">Speak</button>
-        <img src="./logo.png" alt="BRIDGEBOT logo" class="top-logo">
+        <img id="top-logo" src="./logo.png" data-light-src="./logo.png" data-dark-src="./darklogo.png" alt="BRIDGEBOT logo" class="top-logo">
         <button id="btn-paths" class="glassy-btn-orange">Paths</button>
       </div>
 
@@ -1560,6 +1646,29 @@
         el.textContent = "Guide couldn't load. Please refresh or try another browser.";
         el.style.fontSize = "0.9rem";
       }, AVATAR_LOAD_FALLBACK_MS);
+    })();
+
+    // Theme toggle: flip .dark on <html>, persist choice, and swap logo src.
+    (function () {
+      var toggle = document.getElementById("theme-toggle");
+      var logo = document.getElementById("top-logo");
+      if (!toggle) return;
+
+      function syncLogo() {
+        if (!logo) return;
+        var isDark = document.documentElement.classList.contains("dark");
+        var src = isDark ? logo.dataset.darkSrc : logo.dataset.lightSrc;
+        if (src && logo.getAttribute("src") !== src) logo.setAttribute("src", src);
+      }
+      syncLogo();
+
+      toggle.addEventListener("click", function () {
+        var root = document.documentElement;
+        var nowDark = !root.classList.contains("dark");
+        root.classList.toggle("dark", nowDark);
+        try { localStorage.setItem("bridgebot-theme", nowDark ? "dark" : "light"); } catch (_) {}
+        syncLogo();
+      });
     })();
   </script>
   <script type="module" src="./app.js"></script>
