@@ -2,8 +2,19 @@
   "name": "bridge-guide-bot",
   "version": "1.0.0",
   "description": "Bridge Guide Bot - 3D avatar chatbot for EDGE Learning & Innovation Factory",
+  "type": "module",
   "scripts": {
     "dev": "npx serve .",
-    "start": "npx serve ."
+    "start": "npx serve .",
+    "server": "node server/server.js",
+    "dev:all": "concurrently \"npm:server\" \"npm:dev\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
   }
 }

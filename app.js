@@ -2,6 +2,11 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
+// Backend endpoint for AI replies. When served from the same origin use a relative path
+// in production (e.g. "/api/chat" behind a reverse proxy). For local dev we default to the
+// Node server running on :8787.
+const CHAT_API_URL = (typeof window !== "undefined" && window.__CHAT_API_URL__) || "http://localhost:8787/api/chat";
+
 // ====================== AVATAR CONFIG ======================
 const AVATAR_BASE_PATH = "./avatar/avatar/models/";
 const AVATARS = [
@@ -27,6 +32,8 @@ const pathsBtn = document.getElementById("btn-paths");
 const stopSpeechBtn = document.getElementById("stop-speech");
 const outputEl = document.getElementById("output");
 const statusEl = document.getElementById("status");
+const statusStateEl = document.getElementById("status-state");
+const statusClockEl = document.getElementById("status-clock");
 const btnSpeak = document.getElementById("btn-speak");
 const btnPaths = document.getElementById("btn-paths");
 const inputModal = document.getElementById("input-modal");
@@ -52,7 +59,23 @@ function addLine(who, text) {
 
 function setStatus(text) {
   if (statusEl) statusEl.textContent = text || "";
+  if (statusStateEl) {
+    const raw = (text || "READY").toString();
+    const upper = raw.toUpperCase().replace(/\.+$/, "").replace(/[—–-].*$/, "").trim();
+    const short = upper.length > 14 ? upper.slice(0, 14) + "…" : upper;
+    statusStateEl.textContent = short || "READY";
+  }
 }
+
+function updateClock() {
+  if (!statusClockEl) return;
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  statusClockEl.textContent = `${hh}:${mm}`;
+}
+updateClock();
+setInterval(updateClock, 15000);
 
 function setSpeechActivity(active, text = "") {
   isTalking = active;
@@ -159,10 +182,6 @@ function speak(text) {
   }
 }
 
-stopSpeechBtn?.addEventListener("click", () => {
-  window.speechSynthesis.cancel();
-});
-
 // ====================== FAQs ======================
 let FAQ_ENTRIES = [];
 
@@ -227,11 +246,11 @@ function setupSpeech() {
 
     const faq = matchFaqAnswer(text);
     if (faq?.a) {
-      addLine("Bridge Guide Bot", faq.a);
+      addLine("BRIDGEBOT", faq.a);
       speak(faq.a);
     } else {
       const reply = `You said: ${text}`;
-      addLine("Bridge Guide Bot", reply);
+      addLine("BRIDGEBOT", reply);
       speak(reply);
     }
   };
@@ -248,25 +267,11 @@ function setupSpeech() {
   };
 }
 
-speakBtn?.addEventListener("click", () => {
-  if (!speechRecognition) setupSpeech();
-  if (!speechRecognition) return;
-  if (isRecording) return;
-
-  speakBtn.disabled = true;
-  setStatus("Listening...");
-  speechRecognition.start();
-});
-
-pathsBtn?.addEventListener("click", () => {
-  addLine("Bridge Guide Bot", "Say anything and I will speak it back, or ask a room question.");
-});
-
 // ====================== INIT ======================
 (async function init() {
   await loadFaqs();
-  addLine("Bridge Guide Bot", "Salam! I'm Bridge Guide Bot. Tap SPEAK and talk to me.");
-  speak("Salam. I'm Bridge Guide Bot. Tap speak to begin.");
+  addLine("BRIDGEBOT", "Salam! I'm BRIDGEBOT. Tap SPEAK and talk to me.");
+  speak("Salam. I'm BRIDGEBOT. Tap speak to begin.");
 })();
 
 // ====================== THREE.JS AVATAR ======================
@@ -848,7 +853,7 @@ function startVoiceFirstListening() {
       setStopButton(false);
       const buttonLabel = currentVoiceMode === "paths" ? "Paths" : "Speak";
       if (output) {
-        output.innerHTML = `<strong>Bridge Guide Bot:</strong> I didn't catch that. Tap ${buttonLabel} and try again.`;
+        output.innerHTML = `<strong>BRIDGEBOT:</strong> I didn't catch that. Tap ${buttonLabel} and try again.`;
       }
     }
 
@@ -870,7 +875,7 @@ function startVoiceFirstListening() {
       setGlowState("idle");
       const buttonLabel = currentVoiceMode === "paths" ? "Paths" : "Speak";
       if (output) {
-        output.innerHTML = `<strong>Bridge Guide Bot:</strong> I didn't hear anything. Tap ${buttonLabel} and try again.`;
+        output.innerHTML = `<strong>BRIDGEBOT:</strong> I didn't hear anything. Tap ${buttonLabel} and try again.`;
       }
     } else {
       setStatus(`Mic error: ${event.error}`);
@@ -900,7 +905,7 @@ async function processVoiceFirstInput(userInput) {
     // Check moderation
     const moderationIssue = moderateInput(userInput);
     if (moderationIssue) {
-      const bot = formatTextForOutput("Bridge Guide Bot", moderationIssue);
+      const bot = formatTextForOutput("BRIDGEBOT", moderationIssue);
       output.innerHTML = bot;
       setStatus("Ready");
       setGlowState("idle");
@@ -913,7 +918,7 @@ async function processVoiceFirstInput(userInput) {
     const roomAnswer = getRoomAnswer(userInput);
     if (roomAnswer) {
       const you = formatTextForOutput("You", userInput);
-      const bot = formatTextForOutput("Bridge Guide Bot", roomAnswer);
+      const bot = formatTextForOutput("BRIDGEBOT", roomAnswer);
       output.innerHTML = `${you}<br><br>${bot}`;
       setStatus("Speaking...");
       setGlowState("speaking");
@@ -929,14 +934,14 @@ async function processVoiceFirstInput(userInput) {
     setStatus("Thinking...");
     setGlowState("thinking");
     const you = formatTextForOutput("You", userInput);
-    output.innerHTML = `${you}<br><br><strong>Bridge Guide Bot:</strong> <span style="color:#64748b; font-style:italic;">Thinking...</span>`;
+    output.innerHTML = `${you}<br><br><strong>BRIDGEBOT:</strong> <span style="color:#64748b; font-style:italic;">Thinking...</span>`;
 
     // Get response using the current mode for system prompt
     const systemPrompt = buildSystemPrompt(currentVoiceMode);
     const reply = await callOpenAI(systemPrompt, userInput);
 
     // Display response
-    const bot = formatTextForOutput("Bridge Guide Bot", reply);
+    const bot = formatTextForOutput("BRIDGEBOT", reply);
     output.innerHTML = `${you}<br><br>${bot}`;
 
     // Speak the response
@@ -1005,7 +1010,7 @@ async function handleInteraction(kind) {
 
     const moderationIssue = moderateInput(userInput.trim());
     if (moderationIssue) {
-      const bot = formatTextForOutput("Bridge Guide Bot", moderationIssue);
+      const bot = formatTextForOutput("BRIDGEBOT", moderationIssue);
       output.innerHTML = bot;
       setStatus("Ready");
       return;
@@ -1014,7 +1019,7 @@ async function handleInteraction(kind) {
     const roomAnswer = getRoomAnswer(userInput);
     if (roomAnswer) {
       const you = formatTextForOutput("You", userInput.trim());
-      const bot = formatTextForOutput("Bridge Guide Bot", roomAnswer);
+      const bot = formatTextForOutput("BRIDGEBOT", roomAnswer);
       output.innerHTML = `${you}<br><br>${bot}`;
       setStatus("Speaking...");
       await speakText(roomAnswer);
@@ -1027,7 +1032,7 @@ async function handleInteraction(kind) {
     const reply = await callOpenAI(systemPrompt, userInput.trim());
 
     const you = formatTextForOutput("You", userInput.trim());
-    const bot = formatTextForOutput("Bridge Guide Bot", reply);
+    const bot = formatTextForOutput("BRIDGEBOT", reply);
     output.innerHTML = `${you}<br><br>${bot}`;
 
     setStatus("Speaking...");
@@ -1047,9 +1052,9 @@ async function handleInteraction(kind) {
 
 function buildSystemPrompt(kind) {
   if (kind === "paths") {
-    return "You are Bridge Guide Bot, an indoor navigation assistant at EDGE. The user is starting from the main lobby. Reply only in English with short, step-by-step walking directions within the building. Max 5 steps.";
+    return "You are BRIDGEBOT, an indoor navigation assistant at EDGE. The user is starting from the main lobby. Reply only in English with short, step-by-step walking directions within the building. Max 5 steps.";
   }
-  return "You are Bridge Guide Bot, a friendly AI guide in a technology training center called EDGE. Reply only in English. Keep answers concise and conversational.";
+  return "You are BRIDGEBOT, a friendly AI guide in a technology training center called EDGE. Reply only in English. Keep answers concise and conversational.";
 }
 
 function setButtonsDisabled(disabled) {
@@ -1064,7 +1069,7 @@ function getSmallTalkAnswer(userMessage) {
 
   const greetings = ["hello", "hi", "hey", "salam", "good morning", "good evening"];
   if (greetings.some((g) => txt.startsWith(g) || txt.includes(` ${g}`))) {
-    return "Hi there! I am Bridge Guide Bot. Ask me about the EDGE Learning & Innovation Factory programs, labs, or visits.";
+    return "Hi there! I am BRIDGEBOT. Ask me about the EDGE Learning & Innovation Factory programs, labs, or visits.";
   }
 
   if (txt.includes("how are you")) {
@@ -1072,7 +1077,7 @@ function getSmallTalkAnswer(userMessage) {
   }
 
   if (txt.includes("who are you") || txt.includes("what are you") || txt.includes("your name")) {
-    return "I am Bridge Guide Bot, your AI assistant for the EDGE Learning & Innovation Factory. I can tell you about programs, labs, visits, training options, and answer questions about our amazing team including Babu and Awaiz!";
+    return "I am BRIDGEBOT, your AI assistant for the EDGE Learning & Innovation Factory. I can tell you about programs, labs, visits, training options, and answer questions about our amazing team including Babu and Awaiz!";
   }
 
   if (txt.includes("thank")) {
@@ -1122,12 +1127,32 @@ function findBestFaqAnswer(userMessage) {
 
 async function callOpenAI(systemPrompt, userMessage) {
   await ensureFaqsLoaded();
+
   const smallTalk = getSmallTalkAnswer(userMessage);
   if (smallTalk) return smallTalk;
 
-  const answer = findBestFaqAnswer(userMessage);
-  if (answer) return answer;
-  return "I don't have that in my local notes yet. Ask about EDGE Learning & Innovation Factory programs, labs, visits, or training options.";
+  const faq = findBestFaqAnswer(userMessage);
+  if (faq) return faq;
+
+  try {
+    const res = await fetch(CHAT_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ system: systemPrompt, user: userMessage }),
+    });
+
+    if (!res.ok) {
+      console.error("chat api error", res.status, await res.text().catch(() => ""));
+      return "I'm having trouble reaching my AI service right now. Please try again in a moment.";
+    }
+
+    const data = await res.json();
+    return (data.reply || "").trim() ||
+      "I don't have a good answer for that yet. Try asking about EDGE programs, labs, visits, or directions.";
+  } catch (err) {
+    console.error("chat api network error", err);
+    return "I can't reach my AI service. Make sure the backend is running (npm run server).";
+  }
 }
 
 // =======================
