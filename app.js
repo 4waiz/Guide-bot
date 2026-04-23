@@ -153,33 +153,9 @@ let mouthPulseStrength = 0;
 let currentSpeechText = "";
 
 // ====================== TTS (SPEAKING) ======================
+// Thin wrapper around speakText so all TTS goes through one code path.
 function speak(text) {
-  try {
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    if (window.speechSynthesis) {
-      availableVoices = window.speechSynthesis.getVoices() || [];
-    }
-    if (!preferredVoice) selectVoiceForAvatar(currentAvatarId);
-    const v = preferredVoice || availableVoices.find(x => /en/i.test(x.lang)) || availableVoices[0];
-    if (v) u.voice = v;
-    const settings = avatarVoiceSettings[currentAvatarId] || { pitch: 1.0, rate: 1.0 };
-    u.rate = Math.max(0.8, Math.min(settings.rate * SPEECH_RATE_MULT, 2.0));
-    u.pitch = Math.max(0.7, Math.min(settings.pitch, 1.6));
-    u.onstart = () => {
-      setSpeechActivity(true, text);
-    };
-    u.onboundary = handleSpeechBoundary;
-    u.onend = () => {
-      setSpeechActivity(false);
-    };
-    u.onerror = () => {
-      setSpeechActivity(false);
-    };
-    window.speechSynthesis.speak(u);
-  } catch (e) {
-    console.warn("TTS error:", e);
-  }
+  return speakText(text);
 }
 
 // ====================== FAQs ======================
@@ -268,10 +244,12 @@ function setupSpeech() {
 }
 
 // ====================== INIT ======================
+// Browsers block speechSynthesis until the user has interacted with the page,
+// so the greeting is queued and fired on the first tap of Speak/Paths.
+let pendingGreeting = "Salam. I'm BRIDGEBOT, your guide to BRIDGE. Tap speak to begin.";
 (async function init() {
   await loadFaqs();
   addLine("BRIDGEBOT", "Salam! I'm BRIDGEBOT, your guide to BRIDGE. Tap SPEAK to ask about our training, labs, or visits.");
-  speak("Salam. I'm BRIDGEBOT, your guide to BRIDGE. Tap speak to begin.");
 })();
 
 // ====================== THREE.JS AVATAR ======================
@@ -1516,51 +1494,85 @@ function getInputCopy(kind) {
 //  SPEECH / LIP SYNC
 // =======================
 
-// iOS/Safari requires audio to be "unlocked" by a user gesture
+// Browsers (Safari + Chrome) block speechSynthesis until a user gesture.
+// Call this from every tap handler; it only does real work once.
 function unlockAudioForIOS() {
-  if (audioUnlocked || !window.speechSynthesis) return;
+  if (!window.speechSynthesis) return;
 
-  // Create a silent utterance to unlock audio
-  const silence = new SpeechSynthesisUtterance("");
-  silence.volume = 0;
-  silence.rate = 10; // Fast so it's instant
-  window.speechSynthesis.speak(silence);
-  audioUnlocked = true;
+  if (!audioUnlocked) {
+    try {
+      window.speechSynthesis.resume();
+      const primer = new SpeechSynthesisUtterance(" ");
+      primer.volume = 1;
+      primer.rate = 1;
+      primer.pitch = 1;
+      window.speechSynthesis.speak(primer);
+      audioUnlocked = true;
+    } catch (e) {
+      console.warn("audio unlock failed:", e);
+    }
+  } else {
+    try { window.speechSynthesis.resume(); } catch (_) {}
+  }
+
+  if (pendingGreeting) {
+    const greeting = pendingGreeting;
+    pendingGreeting = null;
+    setTimeout(() => {
+      speakText(greeting);
+    }, 120);
+  }
 }
 
 function speakText(text) {
   return new Promise((resolve) => {
-    if (!window.speechSynthesis) {
+    if (!window.speechSynthesis || !text) {
       setSpeechActivity(false);
       setStopButton(false);
       return resolve();
     }
 
-    // Ensure audio is unlocked on iOS
-    unlockAudioForIOS();
-
-    if (currentUtterance) {
-      window.speechSynthesis.cancel();
-      currentUtterance = null;
+    // If voices haven't loaded yet, wait briefly for them. Without a voice,
+    // Safari refuses to speak and Chrome falls back to a random default.
+    if (!preferredVoice) {
+      availableVoices = window.speechSynthesis.getVoices() || [];
+      if (availableVoices.length === 0) {
+        let retries = 0;
+        const waitForVoices = () => {
+          availableVoices = window.speechSynthesis.getVoices() || [];
+          if (availableVoices.length > 0 || retries >= 20) {
+            selectVoiceForAvatar(currentAvatarId);
+            actuallySpeak(text, resolve);
+          } else {
+            retries++;
+            setTimeout(waitForVoices, 100);
+          }
+        };
+        waitForVoices();
+        return;
+      }
+      selectVoiceForAvatar(currentAvatarId);
     }
 
-    // iOS workaround: small delay after cancel
-    setTimeout(() => {
-      actuallySpeak(text, resolve);
-    }, 100);
+    // Cancel any in-flight utterance, then speak. No setTimeout — Safari
+    // drops the utterance if we queue it too late after cancel().
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+    }
+    currentUtterance = null;
+    actuallySpeak(text, resolve);
   });
 }
 
 function actuallySpeak(text, resolve) {
     const utterance = new SpeechSynthesisUtterance(text);
     currentUtterance = utterance;
-    if (!preferredVoice) selectVoiceForAvatar(currentAvatarId);
     const voice = preferredVoice || null;
     const voiceLang = voice && voice.lang ? voice.lang : "en-US";
-    utterance.voice = voice;
+    if (voice) utterance.voice = voice;
     utterance.lang = voiceLang;
+    utterance.volume = 1;
 
-    // Get avatar-specific voice settings for distinct voices
     const settings = avatarVoiceSettings[currentAvatarId] || { pitch: 1.0, rate: 1.0 };
     utterance.pitch = Math.max(0.6, Math.min(settings.pitch, 1.7));
     utterance.rate = Math.max(0.8, Math.min(settings.rate * SPEECH_RATE_MULT, 2.0));
@@ -1572,21 +1584,32 @@ function actuallySpeak(text, resolve) {
 
     utterance.onend = () => {
       setSpeechActivity(false);
-      currentUtterance = null;
+      if (currentUtterance === utterance) currentUtterance = null;
       setStopButton(false);
       resolve();
     };
 
-    utterance.onerror = () => {
+    utterance.onerror = (e) => {
+      console.warn("TTS error:", e && e.error);
       setSpeechActivity(false);
-      currentUtterance = null;
+      if (currentUtterance === utterance) currentUtterance = null;
       setStopButton(false);
       resolve();
     };
     utterance.onboundary = handleSpeechBoundary;
 
-    window.speechSynthesis.cancel();
+    try { window.speechSynthesis.resume(); } catch (_) {}
     window.speechSynthesis.speak(utterance);
+
+    // Chrome bug: synthesis sometimes pauses itself after ~15s. Keep it awake.
+    if (!window.__ttsKeepAlive) {
+      window.__ttsKeepAlive = setInterval(() => {
+        if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }
+      }, 10000);
+    }
 }
 
 function stopSpeaking() {
