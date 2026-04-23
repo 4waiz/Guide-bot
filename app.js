@@ -14,7 +14,7 @@ const AVATARS = [
   { id: "lorraine", label: "Lorraine", file: "lorraine.glb", gender: "female" },
   { id: "aki", label: "Aki", file: "aki.glb", gender: "male" },
   { id: "amari", label: "Amari", file: "amari.glb", gender: "female" },
-  { id: "leo", label: "Leo", file: "leo.glb", gender: "male" },
+  { id: "sohel", label: "Sohel", file: "sohel.glb", gender: "male" },
   { id: "maya", label: "Maya", file: "maya.glb", gender: "female" },
   { id: "rose", label: "Rose", file: "rose.glb", gender: "female" },
   { id: "shonith", label: "Shonith", file: "shonith.glb", gender: "male" },
@@ -323,6 +323,23 @@ let isVoiceFirstListening = false;
 let voiceFirstTranscript = "";
 let currentVoiceMode = "speak"; // "speak" or "paths"
 
+// Safari re-prompts the user for mic permission every time a NEW
+// SpeechRecognition instance calls .start() on an insecure origin or
+// before permission has been granted this session. Keeping ONE shared
+// instance and wiring handlers per-session avoids the repeated prompt.
+let sharedRecognition = null;
+function getOrCreateRecognition() {
+  if (!SpeechRecognition) return null;
+  if (!sharedRecognition) {
+    sharedRecognition = new SpeechRecognition();
+    sharedRecognition.lang = "en-US";
+    sharedRecognition.interimResults = true;
+    sharedRecognition.maxAlternatives = 1;
+    sharedRecognition.continuous = false;
+  }
+  return sharedRecognition;
+}
+
 // =======================
 //  AVATAR PICKER
 // =======================
@@ -395,15 +412,23 @@ setupInputModal();
 initVoiceSelection();
 setupCarouselScroll();
 
-// Load avatar immediately after DOM is ready
-if (document.readyState === 'complete') {
+// Load avatar immediately after DOM is ready.
+// Safari note: module scripts are deferred; by the time this runs, the `load`
+// event may have already fired, so listening for it alone can leave the
+// avatar loader never invoked. Handle both states (interactive/complete) and
+// the `load` event, guarded so we only init once.
+let avatarInitStarted = false;
+function startAvatarInit() {
+  if (avatarInitStarted) return;
+  avatarInitStarted = true;
   initAvatar();
   setupAvatarPicker();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startAvatarInit, { once: true });
 } else {
-  window.addEventListener('load', () => {
-    initAvatar();
-    setupAvatarPicker();
-  });
+  startAvatarInit();
 }
 
 // =======================
@@ -800,11 +825,13 @@ function handleVoiceFirst(mode = "speak") {
 function startVoiceFirstListening() {
   if (isVoiceFirstListening) return;
 
-  voiceFirstRecognition = new SpeechRecognition();
-  voiceFirstRecognition.lang = "en-US";
-  voiceFirstRecognition.interimResults = true;
-  voiceFirstRecognition.maxAlternatives = 1;
-  voiceFirstRecognition.continuous = false;
+  voiceFirstRecognition = getOrCreateRecognition();
+  if (!voiceFirstRecognition) {
+    setStatus("Voice not supported — please type");
+    setGlowState("idle");
+    handleInteraction(currentVoiceMode);
+    return;
+  }
 
   voiceFirstRecognition.onstart = () => {
     isVoiceFirstListening = true;
@@ -858,12 +885,11 @@ function startVoiceFirstListening() {
       }
     }
 
-    voiceFirstRecognition = null;
+    voiceFirstRecognition = sharedRecognition;
   };
 
   voiceFirstRecognition.onerror = (event) => {
     isVoiceFirstListening = false;
-    voiceFirstRecognition = null;
     setStopButton(false);
 
     if (event.error === "not-allowed" || event.error === "permission-denied") {
@@ -889,7 +915,6 @@ function startVoiceFirstListening() {
   } catch (err) {
     console.error("Failed to start voice recognition:", err);
     isVoiceFirstListening = false;
-    voiceFirstRecognition = null;
     setStatus("Voice not supported — please type");
     setGlowState("idle");
     setStopButton(false);
@@ -971,7 +996,6 @@ function stopAllSpeechActivity() {
   if (voiceFirstRecognition && isVoiceFirstListening) {
     voiceFirstRecognition.abort();
     isVoiceFirstListening = false;
-    voiceFirstRecognition = null;
   }
 
   // Stop modal recognition if active
@@ -1590,7 +1614,7 @@ const avatarVoiceSettings = {
   lorraine: { pitch: 1.15, rate: 1.0, gender: "female" },
   aki: { pitch: 0.95, rate: 1.05, gender: "male" },
   amari: { pitch: 1.2, rate: 0.95, gender: "female" },
-  leo: { pitch: 0.8, rate: 0.88, gender: "male" },
+  sohel: { pitch: 0.8, rate: 0.88, gender: "male" },
   maya: { pitch: 1.25, rate: 1.02, gender: "female" },
   rose: { pitch: 1.1, rate: 0.98, gender: "female" },
   shonith: { pitch: 0.9, rate: 0.95, gender: "male" },
@@ -1617,7 +1641,7 @@ const avatarVoiceProfiles = {
     ]
   },
   // Male - British
-  leo: {
+  sohel: {
     gender: "male",
     lang: ["en-GB"],
     names: [
