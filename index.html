@@ -8,14 +8,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-   <link rel="preconnect" href="https://unpkg.com">
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 
   <script type="importmap">
     {
       "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        "three": "./vendor/three/three.module.js",
+        "three/addons/": "./vendor/three/addons/"
       }
     }
   </script>
@@ -1545,6 +1544,37 @@
     </div>
   </div>
 
+  <script>
+    // Fallback: if the module script fails to execute (e.g. import map
+    // resolution error in older Safari, blocked CDN, syntax error), the
+    // "Loading Guide..." overlay would linger forever. This timer runs
+    // outside the module and will surface a readable error after 10s so
+    // the user isn't staring at a stuck loader.
+    (function () {
+      var AVATAR_LOAD_FALLBACK_MS = 10000;
+      setTimeout(function () {
+        var el = document.getElementById("avatar-loading");
+        if (!el) return;
+        if (el.style.display === "none") return;
+        if (window.__avatarInitStarted) return;
+        el.textContent = "Guide couldn't load. Please refresh or try another browser.";
+        el.style.fontSize = "0.9rem";
+      }, AVATAR_LOAD_FALLBACK_MS);
+    })();
+  </script>
   <script type="module" src="./app.js"></script>
+  <script type="module">
+    // If the main module failed to parse/execute, this inline module
+    // still runs independently and lets us detect missing init.
+    window.addEventListener("error", function (e) {
+      if (!e || !e.filename) return;
+      if (e.filename.indexOf("app.js") === -1 && e.filename.indexOf("three") === -1) return;
+      var el = document.getElementById("avatar-loading");
+      if (el && el.style.display !== "none" && !window.__avatarInitStarted) {
+        el.textContent = "Guide failed to load. " + (e.message || "Module error.");
+        el.style.fontSize = "0.85rem";
+      }
+    });
+  </script>
 </body>
 </html>

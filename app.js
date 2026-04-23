@@ -421,6 +421,7 @@ let avatarInitStarted = false;
 function startAvatarInit() {
   if (avatarInitStarted) return;
   avatarInitStarted = true;
+  window.__avatarInitStarted = true;
   initAvatar();
   setupAvatarPicker();
 }
