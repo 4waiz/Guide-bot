@@ -11,7 +11,7 @@ const CHAT_API_URL = (typeof window !== "undefined" && window.__CHAT_API_URL__) 
 const AVATAR_BASE_PATH = "./avatar/avatar/models/";
 const AVATARS = [
   { id: "muhammad", label: "Muhammad", file: "muhammad.glb", gender: "male" },
-  { id: "anna", label: "Anna", file: "anna.glb", gender: "female" },
+  { id: "lorraine", label: "Lorraine", file: "lorraine.glb", gender: "female" },
   { id: "aki", label: "Aki", file: "aki.glb", gender: "male" },
   { id: "amari", label: "Amari", file: "amari.glb", gender: "female" },
   { id: "leo", label: "Leo", file: "leo.glb", gender: "male" },
@@ -270,8 +270,8 @@ function setupSpeech() {
 // ====================== INIT ======================
 (async function init() {
   await loadFaqs();
-  addLine("BRIDGEBOT", "Salam! I'm BRIDGEBOT. Tap SPEAK and talk to me.");
-  speak("Salam. I'm BRIDGEBOT. Tap speak to begin.");
+  addLine("BRIDGEBOT", "Salam! I'm BRIDGEBOT, your guide to BRIDGE. Tap SPEAK to ask about our training, labs, or visits.");
+  speak("Salam. I'm BRIDGEBOT, your guide to BRIDGE. Tap speak to begin.");
 })();
 
 // ====================== THREE.JS AVATAR ======================
@@ -708,7 +708,8 @@ function disposeModel(obj) {
 // Avatar picker
 if (avatarThumbnails) {
   avatarThumbnails.addEventListener("click", (e) => {
-    const thumb = e.target.closest(".avatar-thumb");
+    const item = e.target.closest(".avatar-thumb-item");
+    const thumb = item ? item.querySelector(".avatar-thumb") : e.target.closest(".avatar-thumb");
     if (!thumb) return;
     const avatarId = thumb.dataset.avatar;
     if (avatarId) loadAvatar(avatarId);
@@ -1051,10 +1052,23 @@ async function handleInteraction(kind) {
 }
 
 function buildSystemPrompt(kind) {
+  const bridgeContext = [
+    "You are BRIDGEBOT, the AI guide for BRIDGE — a 22,000 sq ft advanced-technology learning, innovation, and demonstration centre in Abu Dhabi, part of EDGE Group.",
+    "What BRIDGE offers:",
+    "- Hands-on, experiential, gamified training in Industry 4.0, operational excellence, and advanced technology. More than 50% of training time is role-simulation and learning by doing.",
+    "- Core training curriculum: Lean Management, Six Sigma, Lean Digital, Agile, Data Analytics, Internet of Things (IoT), and digital/connected operations.",
+    "- Practical labs and use cases covering cobots (collaborative robots), AGVs (automated guided vehicles), machine connectivity, digital shop-floor management, and additive manufacturing (3D printing).",
+    "- Flagship programs including CEO 4.0 leadership training and an Engineering Bootcamp that upskills engineers for aerospace, defence, and advanced manufacturing sectors.",
+    "- A venue for workshops, competitions, co-development sessions, and demonstrations where technology partners showcase prototypes and advanced technologies.",
+    "- Connects academia, industry, and government to strengthen the UAE's industrial competitiveness, accelerate advanced-technology adoption, and support a knowledge-based economy.",
+    "- Target audience: engineers, operators, managers, executives, students, and industry partners who want to adopt advanced manufacturing and Industry 4.0 practices.",
+    "Important rules: Never mention the acronym 'LIF' or 'Learning & Innovation Factory' — always refer to the organisation as 'BRIDGE'. Reply only in English. Keep answers short, warm, and conversational (2–4 sentences). If a question is outside BRIDGE's scope, say so briefly and offer to help with programs, labs, visits, or directions.",
+  ].join("\n");
+
   if (kind === "paths") {
-    return "You are BRIDGEBOT, an indoor navigation assistant at EDGE. The user is starting from the main lobby. Reply only in English with short, step-by-step walking directions within the building. Max 5 steps.";
+    return bridgeContext + "\n\nYou are currently helping with indoor navigation. The user is starting from the main lobby. Give short, step-by-step walking directions within the building, max 5 steps.";
   }
-  return "You are BRIDGEBOT, a friendly AI guide in a technology training center called EDGE. Reply only in English. Keep answers concise and conversational.";
+  return bridgeContext;
 }
 
 function setButtonsDisabled(disabled) {
@@ -1069,19 +1083,35 @@ function getSmallTalkAnswer(userMessage) {
 
   const greetings = ["hello", "hi", "hey", "salam", "good morning", "good evening"];
   if (greetings.some((g) => txt.startsWith(g) || txt.includes(` ${g}`))) {
-    return "Hi there! I am BRIDGEBOT. Ask me about the EDGE Learning & Innovation Factory programs, labs, or visits.";
+    return "Hi there! I'm BRIDGEBOT. Ask me about BRIDGE — our Industry 4.0 training, labs, workshops, or a guided visit.";
   }
 
   if (txt.includes("how are you")) {
-    return "I am doing great and ready to help you learn about the EDGE Learning & Innovation Factory.";
+    return "Doing great and ready to help. Ask me about BRIDGE's programs, labs, or how to book a visit.";
   }
 
   if (txt.includes("who are you") || txt.includes("what are you") || txt.includes("your name")) {
-    return "I am BRIDGEBOT, your AI assistant for the EDGE Learning & Innovation Factory. I can tell you about programs, labs, visits, training options, and answer questions about our amazing team including Babu and Awaiz!";
+    return "I'm BRIDGEBOT, the AI guide for BRIDGE. I can tell you about our training programs, hands-on labs, workshops, competitions, visits, and more.";
   }
 
   if (txt.includes("thank")) {
-    return "You are welcome! Let me know if you want details on programs, labs, or visits.";
+    return "You're welcome! Let me know if you'd like details on BRIDGE's training tracks, labs, or a walkthrough.";
+  }
+
+  if (txt.includes("what") && (txt.includes("bridge") || txt.includes("offer") || txt.includes("do you do"))) {
+    return "BRIDGE is a 22,000 sq ft advanced-technology learning and innovation centre in Abu Dhabi. We offer hands-on training in Lean, Six Sigma, Agile, Data Analytics, and IoT, plus practical labs with cobots, AGVs, digital shop-floor tools, and additive manufacturing. We also run the CEO 4.0 leadership programme, an Engineering Bootcamp, workshops, and competitions.";
+  }
+
+  if (txt.includes("program") || txt.includes("training") || txt.includes("course")) {
+    return "BRIDGE's training covers Lean Management, Six Sigma, Lean Digital, Agile, Data Analytics, and IoT, with flagship programmes like CEO 4.0 and an Engineering Bootcamp for aerospace and advanced manufacturing. More than half of your time is spent doing, not just listening.";
+  }
+
+  if (txt.includes("lab") || txt.includes("facility") || txt.includes("equipment")) {
+    return "Our labs cover collaborative robots (cobots), automated guided vehicles (AGVs), machine connectivity, digital shop-floor management, and additive manufacturing. Everything is built for hands-on, experiential learning.";
+  }
+
+  if (txt.includes("visit") || txt.includes("tour") || txt.includes("workshop") || txt.includes("competition")) {
+    return "BRIDGE hosts guided visits, targeted workshops, competitions, and co-development sessions. Technology partners use the space to showcase prototypes and advanced tech to industry. I can help you plan a visit — what are you most interested in?";
   }
 
   return "";
@@ -1091,7 +1121,7 @@ function moderateInput(userMessage) {
   const txt = (userMessage || "").toLowerCase();
   if (!txt.trim()) return "";
   if (BAD_WORDS.some((bad) => txt.includes(bad))) {
-    return "Please keep our chat respectful. I can help with EDGE questions, directions, and programs.";
+    return "Please keep our chat respectful. I'm here to help with BRIDGE — training, labs, workshops, visits, and directions.";
   }
   return "";
 }
@@ -1557,7 +1587,7 @@ function setStopButton(enabled) {
 // Voice settings per avatar - each has distinct pitch/rate for unique sound
 const avatarVoiceSettings = {
   muhammad: { pitch: 0.85, rate: 0.92, gender: "male" },
-  anna: { pitch: 1.15, rate: 1.0, gender: "female" },
+  lorraine: { pitch: 1.15, rate: 1.0, gender: "female" },
   aki: { pitch: 0.95, rate: 1.05, gender: "male" },
   amari: { pitch: 1.2, rate: 0.95, gender: "female" },
   leo: { pitch: 0.8, rate: 0.88, gender: "male" },
@@ -1570,88 +1600,166 @@ const avatarVoiceSettings = {
   zola: { pitch: 1.12, rate: 1.03, gender: "female" }
 };
 
+// Per-avatar accent/region profile: each avatar gets a distinct voice
+// by combining preferred voice NAMES, a preferred LANG tag, and gender.
+// Browsers expose different voice sets, so we fall back gracefully.
+const avatarVoiceProfiles = {
+  // Male - Arabic (Gulf) accent
+  muhammad: {
+    gender: "male",
+    lang: ["ar-SA", "ar-AE", "ar-EG", "ar"],
+    names: [
+      "Microsoft Hamed Online (Natural) - Arabic (Saudi Arabia)",
+      "Microsoft Naayf Online (Natural) - Arabic (Saudi Arabia)",
+      "Microsoft Hamdan Online (Natural) - Arabic (United Arab Emirates)",
+      "Microsoft Shakir Online (Natural) - Arabic (Egypt)",
+      "Maged"
+    ]
+  },
+  // Male - British
+  leo: {
+    gender: "male",
+    lang: ["en-GB"],
+    names: [
+      "Microsoft Ryan Online (Natural) - English (United Kingdom)",
+      "Google UK English Male",
+      "Daniel", "Oliver", "Microsoft George"
+    ]
+  },
+  // Male - American
+  tom: {
+    gender: "male",
+    lang: ["en-US"],
+    names: [
+      "Microsoft Guy Online (Natural) - English (United States)",
+      "Google US English",
+      "Alex", "Fred", "Aaron"
+    ]
+  },
+  // Male - Australian
+  aki: {
+    gender: "male",
+    lang: ["en-AU"],
+    names: [
+      "Microsoft William Online (Natural) - English (Australia)",
+      "Lee", "Karen (Australian)", "Microsoft James"
+    ]
+  },
+  // Male - Indian
+  shonith: {
+    gender: "male",
+    lang: ["en-IN", "hi-IN"],
+    names: [
+      "Microsoft Prabhat Online (Natural) - English (India)",
+      "Google हिन्दी", "Rishi", "Veena"
+    ]
+  },
+
+  // Female - American
+  anna: {
+    gender: "female",
+    lang: ["en-US"],
+    names: [
+      "Microsoft Aria Online (Natural) - English (United States)",
+      "Samantha", "Google US English", "Microsoft Jenny"
+    ]
+  },
+  // Female - British
+  rose: {
+    gender: "female",
+    lang: ["en-GB"],
+    names: [
+      "Microsoft Libby Online (Natural) - English (United Kingdom)",
+      "Google UK English Female", "Kate", "Serena"
+    ]
+  },
+  // Female - Irish
+  amari: {
+    gender: "female",
+    lang: ["en-IE", "en-GB"],
+    names: ["Moira", "Microsoft Emily Online (Natural) - English (Ireland)", "Fiona"]
+  },
+  // Female - Australian
+  maya: {
+    gender: "female",
+    lang: ["en-AU"],
+    names: [
+      "Microsoft Natasha Online (Natural) - English (Australia)",
+      "Karen", "Catherine"
+    ]
+  },
+  // Female - Chinese-English
+  wei: {
+    gender: "female",
+    lang: ["zh-CN", "en-US"],
+    names: [
+      "Microsoft Xiaoxiao Online (Natural) - Chinese (Mainland)",
+      "Ting-Ting", "Mei-Jia", "Google 普通话（中国大陆）"
+    ]
+  },
+  // Female - Indian
+  zara: {
+    gender: "female",
+    lang: ["en-IN", "hi-IN"],
+    names: [
+      "Microsoft Neerja Online (Natural) - English (India)",
+      "Google हिन्दी", "Veena", "Lekha"
+    ]
+  },
+  // Female - South African / African English
+  zola: {
+    gender: "female",
+    lang: ["en-ZA", "en-GB"],
+    names: [
+      "Microsoft Leah Online (Natural) - English (South Africa)",
+      "Tessa", "Google UK English Female"
+    ]
+  }
+};
+
+// Name tokens that strongly indicate gender — used to filter out wrong-gender voices.
+const FEMALE_NAME_HINT = /(female|woman|samantha|karen|victoria|fiona|moira|tessa|aria|jenny|libby|natasha|neerja|leah|zira|hazel|susan|catherine|serena|kate|allison|ava|emily|xiaoxiao|mei|ting|veena|lekha|salli|joanna|kimberly|ivy|amy|emma)/i;
+const MALE_NAME_HINT = /(male|man|alex|daniel|fred|ralph|tom|oliver|george|james|william|ryan|guy|mark|david|aaron|prabhat|rishi|hamed|naayf|hamdan|shakir|maged|lee|xiaoyi|matthew|brian|justin|joey|kevin)/i;
+
+function voiceLooksFemale(v) {
+  return FEMALE_NAME_HINT.test(v.name) && !MALE_NAME_HINT.test(v.name);
+}
+function voiceLooksMale(v) {
+  return MALE_NAME_HINT.test(v.name) && !FEMALE_NAME_HINT.test(v.name);
+}
+function voiceMatchesGender(v, gender) {
+  if (gender === "female") return voiceLooksFemale(v);
+  if (gender === "male") return voiceLooksMale(v);
+  return true;
+}
+
 function selectVoiceForAvatar(avatarId) {
   const avatar = AVATARS.find((a) => a.id === avatarId);
   if (!avatar || !availableVoices.length) return;
 
-  const gender = avatar.gender || "neutral";
+  const profile = avatarVoiceProfiles[avatar.id] || { gender: avatar.gender || "neutral", lang: ["en-US", "en-GB", "en"], names: [] };
+  const gender = profile.gender;
+  const langs = profile.lang || [];
+  const names = profile.names || [];
 
-  // Voice preferences per avatar - includes iOS, Windows, Chrome voices
-  const avatarVoiceMap = {
-    muhammad: [
-      "Microsoft Naayf Online (Natural) - Arabic (Saudi Arabia)",
-      "Microsoft Guy Online (Natural) - English (United States)",
-      "Alex", "Daniel", "Google UK English Male", "Aaron"
-    ],
-    anna: [
-      "Microsoft Aria Online (Natural) - English (United States)",
-      "Samantha", "Karen", "Google UK English Female", "Fiona"
-    ],
-    aki: [
-      "Microsoft Ryan Online (Natural) - English (United States)",
-      "Alex", "Daniel", "Google US English", "Tom"
-    ],
-    amari: [
-      "Microsoft Jenny Online (Natural) - English (United States)",
-      "Samantha", "Tessa", "Google UK English Female", "Moira"
-    ],
-    leo: [
-      "Microsoft Guy Online (Natural) - English (United States)",
-      "Daniel", "Alex", "Google UK English Male", "Oliver"
-    ],
-    maya: [
-      "Microsoft Aria Online (Natural) - English (United States)",
-      "Karen", "Samantha", "Google UK English Female", "Victoria"
-    ],
-    rose: [
-      "Microsoft Jenny Online (Natural) - English (United States)",
-      "Moira", "Samantha", "Google UK English Female", "Kate"
-    ],
-    shonith: [
-      "Microsoft Ryan Online (Natural) - English (United States)",
-      "Rishi", "Daniel", "Google UK English Male", "Alex"
-    ],
-    tom: [
-      "Microsoft Guy Online (Natural) - English (United States)",
-      "Alex", "Fred", "Google US English", "Ralph"
-    ],
-    wei: [
-      "Microsoft Jenny Online (Natural) - English (United States)",
-      "Ting-Ting", "Samantha", "Google US English", "Mei-Jia"
-    ],
-    zara: [
-      "Microsoft Aria Online (Natural) - English (United States)",
-      "Tessa", "Karen", "Google UK English Female", "Samantha"
-    ],
-    zola: [
-      "Microsoft Jenny Online (Natural) - English (United States)",
-      "Samantha", "Victoria", "Google US English", "Fiona"
-    ]
-  };
+  const byNameExact = availableVoices.find((v) => names.some((n) => v.name === n));
+  const byNameIncludes = availableVoices.find((v) => names.some((n) => v.name.includes(n)));
+  const byLangAndGender = langs
+    .map((tag) =>
+      availableVoices.find(
+        (v) => v.lang && v.lang.toLowerCase().startsWith(tag.toLowerCase()) && voiceMatchesGender(v, gender)
+      )
+    )
+    .find(Boolean);
+  const byLangOnly = langs
+    .map((tag) => availableVoices.find((v) => v.lang && v.lang.toLowerCase().startsWith(tag.toLowerCase())))
+    .find(Boolean);
+  const byGenderEnglish = availableVoices.find(
+    (v) => v.lang && v.lang.toLowerCase().startsWith("en") && voiceMatchesGender(v, gender)
+  );
+  const englishAny = availableVoices.find((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
 
-  // Gender fallback voices
-  const genderFallback = {
-    male: ["Alex", "Daniel", "Google UK English Male", "Microsoft Guy Online (Natural) - English (United States)"],
-    female: ["Samantha", "Karen", "Google UK English Female", "Microsoft Aria Online (Natural) - English (United States)"],
-    neutral: ["Samantha", "Alex", "Google US English"]
-  };
-
-  const names = avatarVoiceMap[avatar.id] || genderFallback[gender] || genderFallback.neutral;
-
-  // Try to find a matching voice
-  preferredVoice =
-    availableVoices.find((v) => names.some(n => v.name.includes(n))) ||
-    availableVoices.find((v) => {
-      // Match by gender for fallback
-      const isFemale = /female|samantha|karen|victoria|fiona|moira|tessa/i.test(v.name);
-      const isMale = /male|alex|daniel|tom|fred|ralph/i.test(v.name);
-      if (gender === "female") return isFemale;
-      if (gender === "male") return isMale && !isFemale;
-      return true;
-    }) ||
-    availableVoices.find((v) => v.lang && v.lang.toLowerCase().startsWith("en")) ||
-    availableVoices[0] ||
-    null;
+  preferredVoice = byNameExact || byNameIncludes || byLangAndGender || byLangOnly || byGenderEnglish || englishAny || availableVoices[0] || null;
 }
 
 function escapeHtml(str) {
