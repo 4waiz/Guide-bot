@@ -1656,7 +1656,7 @@ const avatarVoiceProfiles = {
   },
 
   // Female - American
-  anna: {
+  lorraine: {
     gender: "female",
     lang: ["en-US"],
     names: [
