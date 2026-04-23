@@ -2,10 +2,24 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-// Backend endpoint for AI replies. When served from the same origin use a relative path
-// in production (e.g. "/api/chat" behind a reverse proxy). For local dev we default to the
-// Node server running on :8787.
-const CHAT_API_URL = (typeof window !== "undefined" && window.__CHAT_API_URL__) || "http://localhost:8787/api/chat";
+// Backend endpoint for AI replies.
+// We resolve this dynamically so the app works whether you open it on:
+//   - the host PC (localhost)
+//   - a tablet/phone on the LAN (http://<pc-ip>:8787)
+//   - HTTPS (required for mic permission on non-localhost origins)
+// Rule: if the page was served from our Node server (same origin), use a relative
+// /api/chat path. Otherwise (opening index.html via `npx serve` on a different
+// port), point at the Node server on the SAME hostname the page was loaded from.
+function resolveChatApiUrl() {
+  if (typeof window === "undefined") return "/api/chat";
+  if (window.__CHAT_API_URL__) return window.__CHAT_API_URL__;
+  const { protocol, hostname, port } = window.location;
+  // Served by our Node server (8787 is the API port). Use relative path.
+  if (port === "8787" || port === "8788") return "/api/chat";
+  // Opened via a static file server — hit Node on the same host.
+  return `${protocol}//${hostname}:8787/api/chat`;
+}
+const CHAT_API_URL = resolveChatApiUrl();
 
 // ====================== AVATAR CONFIG ======================
 const AVATAR_BASE_PATH = "./avatar/avatar/models/";
