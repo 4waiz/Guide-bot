@@ -382,6 +382,12 @@ setupCarouselScroll();
 // event may have already fired, so listening for it alone can leave the
 // avatar loader never invoked. Handle both states (interactive/complete) and
 // the `load` event, guarded so we only init once.
+// =======================
+//  AVATAR INIT (static image — Safari-safe)
+// =======================
+const AVATAR_IMAGE_BASE_PATH = "./avatar/avatar/images/";
+let avatarImageEl = null;
+
 let avatarInitStarted = false;
 function startAvatarInit() {
   if (avatarInitStarted) return;
@@ -394,14 +400,10 @@ function startAvatarInit() {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', startAvatarInit, { once: true });
 } else {
-  startAvatarInit();
+  // Defer to a microtask so the rest of the module finishes initializing
+  // (e.g. avatarVoiceProfiles, avatarVoiceSettings) before initAvatar runs.
+  Promise.resolve().then(startAvatarInit);
 }
-
-// =======================
-//  AVATAR INIT (static image — Safari-safe)
-// =======================
-const AVATAR_IMAGE_BASE_PATH = "./avatar/avatar/images/";
-let avatarImageEl = null;
 
 function initAvatar() {
   if (!avatarContainer) return;
