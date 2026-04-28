@@ -406,14 +406,21 @@ let avatarImageEl = null;
 function initAvatar() {
   if (!avatarContainer) return;
 
+  if (avatarLoading && avatarLoading.parentNode) {
+    avatarLoading.parentNode.removeChild(avatarLoading);
+  }
+
   avatarImageEl = document.createElement("img");
   avatarImageEl.id = "avatar-image";
   avatarImageEl.alt = "Guide avatar";
   avatarImageEl.decoding = "async";
+  avatarImageEl.style.position = "absolute";
+  avatarImageEl.style.inset = "0";
   avatarImageEl.style.width = "100%";
   avatarImageEl.style.height = "100%";
-  avatarImageEl.style.objectFit = "contain";
+  avatarImageEl.style.objectFit = "cover";
   avatarImageEl.style.display = "block";
+  avatarImageEl.style.zIndex = "2";
   avatarContainer.appendChild(avatarImageEl);
 
   loadAvatar(DEFAULT_AVATAR_ID);
