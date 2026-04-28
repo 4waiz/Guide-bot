@@ -1,7 +1,3 @@
-// --- Imports for Three.js ---
-import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-
 // Backend endpoint for AI replies.
 // We resolve this dynamically so the app works whether you open it on:
 //   - the host PC (localhost)
@@ -22,7 +18,6 @@ function resolveChatApiUrl() {
 const CHAT_API_URL = resolveChatApiUrl();
 
 // ====================== AVATAR CONFIG ======================
-const AVATAR_BASE_PATH = "./avatar/avatar/models/";
 const AVATARS = [
   { id: "muhammad", label: "Muhammad", file: "muhammad.glb", gender: "male" },
   { id: "lorraine", label: "Lorraine", file: "lorraine.glb", gender: "female" },
@@ -266,36 +261,14 @@ let pendingGreeting = "Salam. I'm BRIDGEBOT, your guide to BRIDGE. Tap speak to 
   addLine("BRIDGEBOT", "Salam! I'm BRIDGEBOT, your guide to BRIDGE. Tap SPEAK to ask about our training, labs, or visits.");
 })();
 
-// ====================== THREE.JS AVATAR ======================
+// ====================== STATIC AVATAR ======================
 const avatarContainer = document.getElementById("avatar-container");
 const avatarLoading = document.getElementById("avatar-loading");
 const avatarThumbnails = document.getElementById("avatar-thumbnails");
 const avatarPrevBtn = document.getElementById("avatar-prev");
 const avatarNextBtn = document.getElementById("avatar-next");
 
-let scene, camera, renderer;
-let model;
-let animationLoopStarted = false;
 let currentAvatarId = DEFAULT_AVATAR_ID;
-
-// Morph targets
-let mouthParts = [];
-let eyeParts = [];
-let smileParts = [];
-let browParts = [];
-
-// Bones
-let chestBone = null;
-let shoulderL = null;
-let shoulderR = null;
-
-// Animation state
-let nextBlinkTime = Date.now() + 2000 + Math.random() * 1200;
-let headTarget = { x: 0, y: 0 };
-let lastPointerLookTime = 0;
-let nextIdleHeadTurn = Date.now() + 3500;
-let pointerInAvatar = false;
-let pointerNorm = { x: 0, y: 0 };
 
 // Input modal state
 let activeInputMode = "mic";
@@ -425,80 +398,35 @@ if (document.readyState === 'loading') {
 }
 
 // =======================
-//  AVATAR INIT
+//  AVATAR INIT (static image — Safari-safe)
 // =======================
+const AVATAR_IMAGE_BASE_PATH = "./avatar/avatar/images/";
+let avatarImageEl = null;
+
 function initAvatar() {
   if (!avatarContainer) return;
 
-  scene = new THREE.Scene();
-  scene.background = null;
+  avatarImageEl = document.createElement("img");
+  avatarImageEl.id = "avatar-image";
+  avatarImageEl.alt = "Guide avatar";
+  avatarImageEl.decoding = "async";
+  avatarImageEl.style.width = "100%";
+  avatarImageEl.style.height = "100%";
+  avatarImageEl.style.objectFit = "contain";
+  avatarImageEl.style.display = "block";
+  avatarContainer.appendChild(avatarImageEl);
 
-  camera = new THREE.PerspectiveCamera(
-    45,
-    avatarContainer.clientWidth / avatarContainer.clientHeight,
-    0.1,
-    100
-  );
-  camera.position.set(0, 1.7, 0.6);
-
-  renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    alpha: true,
-    powerPreference: "high-performance",
-    precision: "mediump"
-  });
-  renderer.setSize(avatarContainer.clientWidth, avatarContainer.clientHeight);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-  avatarContainer.appendChild(renderer.domElement);
-
-  const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
-  scene.add(ambientLight);
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
-  dirLight.position.set(1, 2, 3);
-  scene.add(dirLight);
-
-  // Start animation loop immediately for smooth background
-  startAnimationLoop();
-
-  // Load avatar immediately - optimizations are in place
-  setTimeout(() => {
-    loadAvatar(DEFAULT_AVATAR_ID);
-  }, 50);
-
-  window.addEventListener("resize", () => {
-    if (!camera || !renderer) return;
-    camera.aspect = avatarContainer.clientWidth / avatarContainer.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(avatarContainer.clientWidth, avatarContainer.clientHeight);
-  });
-
-  avatarContainer.addEventListener("pointerenter", () => { pointerInAvatar = true; });
-  avatarContainer.addEventListener("pointerleave", () => { pointerInAvatar = false; });
-  avatarContainer.addEventListener("pointermove", (e) => {
-    const rect = avatarContainer.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    pointerNorm.x = x * 2 - 1;
-    pointerNorm.y = y * 2 - 1;
-    lastPointerLookTime = Date.now();
-  });
+  loadAvatar(DEFAULT_AVATAR_ID);
 }
 
 function loadAvatar(avatarId) {
-  if (!scene) {
-    console.error("Scene not initialized");
-    if (avatarLoading) avatarLoading.style.display = "none";
-    return;
-  }
+  if (!avatarImageEl) return;
 
   const avatar = AVATARS.find((a) => a.id === avatarId) || AVATARS[0];
   if (!avatar) {
-    console.error("Avatar not found:", avatarId);
     if (avatarLoading) avatarLoading.style.display = "none";
     return;
   }
-  if (currentAvatarId === avatar.id && model) return;
 
   currentAvatarId = avatar.id;
   selectVoiceForAvatar(currentAvatarId);
@@ -507,220 +435,10 @@ function loadAvatar(avatarId) {
     t.classList.toggle("selected", t.dataset.avatar === avatar.id);
   });
 
-  if (avatarLoading) {
-    avatarLoading.style.display = "flex";
-    avatarLoading.textContent = `Loading ${avatar.label}...`;
-  }
+  avatarImageEl.alt = avatar.label;
+  avatarImageEl.src = `${AVATAR_IMAGE_BASE_PATH}${avatar.id}.png`;
 
-  console.log("Loading avatar:", avatar.label, "from", `${AVATAR_BASE_PATH}${avatar.file}`);
-
-  // Add timeout to hide loading screen if avatar takes too long (fallback)
-  // This ensures the app is usable even if avatar doesn't load
-  let loadingTimeout = setTimeout(() => {
-    if (avatarLoading && avatarLoading.style.display !== "none") {
-      console.warn("Avatar loading timeout - hiding loading screen");
-      avatarLoading.textContent = "Ready - Avatar loading in background";
-      setTimeout(() => {
-        if (avatarLoading) avatarLoading.style.display = "none";
-      }, 1000);
-    }
-  }, 3000); // 3 seconds max before hiding
-
-  mouthParts = [];
-  eyeParts = [];
-  smileParts = [];
-  browParts = [];
-  chestBone = null;
-  shoulderL = null;
-  shoulderR = null;
-
-  if (model) {
-    scene.remove(model);
-    disposeModel(model);
-    model = null;
-  }
-
-  const loader = new GLTFLoader();
-
-  // Add loading progress
-  loader.load(
-    `${AVATAR_BASE_PATH}${avatar.file}`,
-    (gltf) => {
-      console.log("Avatar loaded successfully:", avatar.label);
-
-      if (avatar.id !== currentAvatarId) {
-        console.log("Avatar changed during load, disposing:", avatar.id);
-        disposeModel(gltf.scene);
-        return;
-      }
-
-      model = gltf.scene;
-
-      // Optimize model - reduce geometry complexity if needed
-      model.traverse((child) => {
-        if (child.isMesh) {
-          // Enable frustum culling
-          child.frustumCulled = true;
-          // Optimize materials
-          if (child.material) {
-            child.material.precision = "mediump";
-          }
-        }
-      });
-
-      scene.add(model);
-
-      // Clear loading timeout and hide loading screen
-      if (loadingTimeout) clearTimeout(loadingTimeout);
-      if (avatarLoading) {
-        avatarLoading.style.display = "none";
-      }
-
-      const mouthNames = ["jawOpen", "mouthOpen", "viseme_aa", "viseme_OH", "MouthOpen", "v_aa"];
-      const eyeNames = ["eyeBlinkLeft", "eyeBlinkRight", "eyesClosed", "blink", "EyeBlink_L", "EyeBlink_R"];
-      const smileNames = ["smile", "smileWide", "mouthSmile", "mouthSmileLeft", "mouthSmileBig", "mouthSmileRight"];
-      const browNames = ["browInnerUp", "browUp", "BrowsUp", "browRaise"];
-
-      model.traverse((child) => {
-        if (child.isBone) {
-          if (!chestBone && /chest|spine2|upperchest/i.test(child.name)) chestBone = child;
-          if (!shoulderL && /shoulder.*(L|Left)/i.test(child.name)) shoulderL = child;
-          if (!shoulderR && /shoulder.*(R|Right)/i.test(child.name)) shoulderR = child;
-        }
-
-        if (child.isMesh && child.morphTargetDictionary) {
-          const dict = child.morphTargetDictionary;
-          for (let name of mouthNames) {
-            if (dict[name] !== undefined) { mouthParts.push({ mesh: child, index: dict[name] }); break; }
-          }
-          for (let name of eyeNames) {
-            if (dict[name] !== undefined) { eyeParts.push({ mesh: child, index: dict[name] }); }
-          }
-          for (let name of smileNames) {
-            if (dict[name] !== undefined) { smileParts.push({ mesh: child, index: dict[name] }); break; }
-          }
-          for (let name of browNames) {
-            if (dict[name] !== undefined) { browParts.push({ mesh: child, index: dict[name] }); break; }
-          }
-        }
-      });
-
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
-      const faceHeight = box.max.y - size.y * 0.12;
-      camera.position.set(center.x, faceHeight, center.z + 0.55);
-      camera.lookAt(center.x, faceHeight, center.z);
-    },
-    (progress) => {
-      // Show loading progress
-      if (avatarLoading && progress.total > 0) {
-        const percent = Math.round((progress.loaded / progress.total) * 100);
-        avatarLoading.textContent = `Loading ${avatar.label}... ${percent}%`;
-        console.log(`Loading progress: ${percent}%`);
-      } else if (avatarLoading) {
-        console.log("Loading progress (no total):", progress.loaded);
-      }
-    },
-    (err) => {
-      console.error("Error loading GLB:", err);
-
-      // Clear loading timeout
-      if (loadingTimeout) clearTimeout(loadingTimeout);
-
-      if (avatarLoading) {
-        avatarLoading.textContent = "Ready";
-        avatarLoading.style.fontSize = "0.9rem";
-        // Hide loading screen after showing error briefly
-        setTimeout(() => {
-          if (avatarLoading) avatarLoading.style.display = "none";
-        }, 1500);
-      }
-    }
-  );
-}
-
-function startAnimationLoop() {
-  if (animationLoopStarted) return;
-  animationLoopStarted = true;
-  animate();
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-  const now = Date.now();
-  const t = now * 0.001;
-
-  if (model) {
-    // Blink
-    let blinkVal = 0;
-    if (now > nextBlinkTime) {
-      if (now < nextBlinkTime + 130) {
-        blinkVal = 1;
-      } else {
-        nextBlinkTime = now + 2000 + Math.random() * 2000;
-      }
-    }
-    eyeParts.forEach((p) => { p.mesh.morphTargetInfluences[p.index] = blinkVal; });
-
-    // Breathing
-    const breathe = Math.sin(t * 1.4) * 0.015;
-    model.position.y = breathe;
-
-    if (chestBone) chestBone.rotation.x = Math.sin(t * 1.5) * 0.04;
-    if (shoulderL && shoulderR) {
-      shoulderL.rotation.z = Math.sin(t * 0.8) * 0.03;
-      shoulderR.rotation.z = -Math.sin(t * 0.8) * 0.03;
-    }
-
-    // Head movement
-    const sinceLook = now - lastPointerLookTime;
-    if (pointerInAvatar && sinceLook < 2500) {
-      headTarget.y = THREE.MathUtils.clamp(pointerNorm.x * 0.35, -0.35, 0.35);
-      headTarget.x = THREE.MathUtils.clamp(-pointerNorm.y * 0.2, -0.2, 0.2);
-    } else {
-      if (now > nextIdleHeadTurn) {
-        headTarget.y = (Math.random() - 0.5) * 0.35;
-        headTarget.x = (Math.random() - 0.5) * 0.12;
-        nextIdleHeadTurn = now + 2000 + Math.random() * 4000;
-      }
-    }
-    model.rotation.y = THREE.MathUtils.lerp(model.rotation.y, headTarget.y, 0.08);
-    model.rotation.x = THREE.MathUtils.lerp(model.rotation.x, headTarget.x, 0.08);
-
-    // Idle smile
-    smileParts.forEach((p) => { p.mesh.morphTargetInfluences[p.index] = 0.25; });
-    browParts.forEach((p) => { p.mesh.morphTargetInfluences[p.index] = 0.02; });
-
-    // Lip sync (word-boundary driven, with gentle motion)
-    let mouthTarget = 0;
-    if (isTalking) {
-      const pulse = now < mouthPulseUntil ? mouthPulseStrength : 0;
-      const chatter = 0.12 + 0.08 * Math.sin(t * 10);
-      mouthTarget = Math.min(1, chatter + pulse);
-    }
-    mouthOpen = THREE.MathUtils.lerp(mouthOpen, mouthTarget, 0.35);
-    mouthParts.forEach((p) => { p.mesh.morphTargetInfluences[p.index] = mouthOpen; });
-
-    renderer.render(scene, camera);
-  } else {
-    // Only render scene without model (lighter)
-    renderer.render(scene, camera);
-  }
-}
-
-function disposeModel(obj) {
-  obj.traverse((child) => {
-    if (child.isMesh) {
-      if (child.geometry && child.geometry.dispose) child.geometry.dispose();
-      const mat = child.material;
-      if (Array.isArray(mat)) {
-        mat.forEach((m) => m && m.dispose && m.dispose());
-      } else if (mat && mat.dispose) {
-        mat.dispose();
-      }
-    }
-  });
+  if (avatarLoading) avatarLoading.style.display = "none";
 }
 
 // Avatar picker
