@@ -542,17 +542,6 @@ setStatus("Ready");
 setStopButton(false);
 setGlowState("idle");
 
-// Initialize UI first (non-blocking)
-setupButtons();
-setupInputModal();
-initVoiceSelection();
-setupCarouselScroll();
-
-// Load avatar immediately after DOM is ready.
-// Safari note: module scripts are deferred; by the time this runs, the `load`
-// event may have already fired, so listening for it alone can leave the
-// avatar loader never invoked. Handle both states (interactive/complete) and
-// the `load` event, guarded so we only init once.
 let avatarInitStarted = false;
 function startAvatarInit() {
   if (avatarInitStarted) return;
@@ -562,11 +551,26 @@ function startAvatarInit() {
   setupAvatarPicker();
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startAvatarInit, { once: true });
-} else {
+// Defer all init to a microtask so every top-level `const`/`let` further
+// down the module (avatarVoiceProfiles, avatarVoiceSettings, etc.) is
+// initialized before any code reaches into them. Without this, Safari
+// throws `ReferenceError: Cannot access 'avatarVoiceProfiles' before
+// initialization` and the avatar never loads.
+function bootstrap() {
+  setupButtons();
+  setupInputModal();
+  initVoiceSelection();
+  setupCarouselScroll();
   startAvatarInit();
 }
+
+Promise.resolve().then(() => {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrap, { once: true });
+  } else {
+    bootstrap();
+  }
+});
 
 // =======================
 //  AVATAR INIT
