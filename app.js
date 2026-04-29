@@ -444,8 +444,7 @@ function initAvatar() {
   renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
-    powerPreference: "high-performance",
-    precision: "mediump"
+    powerPreference: "high-performance"
   });
   renderer.setSize(avatarContainer.clientWidth, avatarContainer.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -556,15 +555,9 @@ function loadAvatar(avatarId) {
 
       model = gltf.scene;
 
-      // Optimize model - reduce geometry complexity if needed
       model.traverse((child) => {
         if (child.isMesh) {
-          // Enable frustum culling
           child.frustumCulled = true;
-          // Optimize materials
-          if (child.material) {
-            child.material.precision = "mediump";
-          }
         }
       });
 
@@ -613,28 +606,24 @@ function loadAvatar(avatarId) {
       camera.lookAt(center.x, faceHeight, center.z);
     },
     (progress) => {
-      // Show loading progress
-      if (avatarLoading && progress.total > 0) {
+      if (!avatarLoading) return;
+      if (progress.total > 0) {
         const percent = Math.round((progress.loaded / progress.total) * 100);
         avatarLoading.textContent = `Loading ${avatar.label}... ${percent}%`;
-        console.log(`Loading progress: ${percent}%`);
-      } else if (avatarLoading) {
-        console.log("Loading progress (no total):", progress.loaded);
+      } else {
+        const kb = Math.round(progress.loaded / 1024);
+        avatarLoading.textContent = `Loading ${avatar.label}... ${kb} KB`;
       }
     },
     (err) => {
       console.error("Error loading GLB:", err);
-
-      // Clear loading timeout
       if (loadingTimeout) clearTimeout(loadingTimeout);
-
       if (avatarLoading) {
-        avatarLoading.textContent = "Ready";
-        avatarLoading.style.fontSize = "0.9rem";
-        // Hide loading screen after showing error briefly
-        setTimeout(() => {
-          if (avatarLoading) avatarLoading.style.display = "none";
-        }, 1500);
+        const msg = (err && (err.message || err.type)) || "unknown error";
+        avatarLoading.textContent = `Avatar load failed: ${msg}`;
+        avatarLoading.style.fontSize = "0.8rem";
+        avatarLoading.style.padding = "0 12px";
+        avatarLoading.style.textAlign = "center";
       }
     }
   );
