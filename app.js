@@ -1714,29 +1714,62 @@ function getInputCopy(kind) {
 //  SPEECH / LIP SYNC
 // =======================
 
-// Browsers (Safari + Chrome) block speechSynthesis until a user gesture.
-// Call this from every tap handler; it only does real work once.
+// Browsers (Safari + Chrome) block speechSynthesis AND HTML5 <audio>
+// until a user gesture. Call this from every tap handler; it only does
+// real work once.
 function unlockAudioForIOS() {
-  if (!window.speechSynthesis) return;
-
   if (!audioUnlocked) {
-    try {
-      window.speechSynthesis.resume();
-      const primer = new SpeechSynthesisUtterance(" ");
-      primer.volume = 1;
-      primer.rate = 1;
-      primer.pitch = 1;
-      window.speechSynthesis.speak(primer);
-      audioUnlocked = true;
-    } catch (e) {
-      console.warn("audio unlock failed:", e);
+    // Unlock speechSynthesis (TTS used by speakText).
+    if (window.speechSynthesis) {
+      try {
+        window.speechSynthesis.resume();
+        const primer = new SpeechSynthesisUtterance(" ");
+        primer.volume = 1;
+        primer.rate = 1;
+        primer.pitch = 1;
+        window.speechSynthesis.speak(primer);
+      } catch (e) {
+        console.warn("speechSynthesis unlock failed:", e);
+      }
     }
+
+    // Unlock HTML5 <audio> (used by the idle-greeting clips). On iOS Safari
+    // an Audio element only becomes playable after .play() is invoked
+    // synchronously inside a user gesture, with a real (even silent) src.
+    try {
+      if (!idleGreetingAudio) {
+        idleGreetingAudio = new Audio();
+        idleGreetingAudio.preload = "auto";
+        idleGreetingAudio.crossOrigin = "anonymous";
+      }
+      // Tiny silent WAV so .play() has something real to start on.
+      idleGreetingAudio.src =
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+      idleGreetingAudio.muted = true;
+      const primerPlay = idleGreetingAudio.play();
+      const finishPrime = () => {
+        try { idleGreetingAudio.pause(); } catch (_) {}
+        try { idleGreetingAudio.currentTime = 0; } catch (_) {}
+        idleGreetingAudio.muted = false;
+      };
+      if (primerPlay && primerPlay.then) {
+        primerPlay.then(finishPrime).catch(finishPrime);
+      } else {
+        finishPrime();
+      }
+    } catch (e) {
+      console.warn("HTML audio unlock failed:", e);
+    }
+
+    audioUnlocked = true;
   } else {
-    try { window.speechSynthesis.resume(); } catch (_) {}
+    if (window.speechSynthesis) {
+      try { window.speechSynthesis.resume(); } catch (_) {}
+    }
   }
 
   // Kick off the auto-greeting loop after the first user tap (browsers
-  // require a gesture before speechSynthesis is allowed to make sound).
+  // require a gesture before audio is allowed to make sound).
   startIdleGreetingLoop();
 }
 
