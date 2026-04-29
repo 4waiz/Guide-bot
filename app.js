@@ -117,7 +117,8 @@ function handleSpeechBoundary(event) {
 // ====================== MISSING CONSTANTS ======================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-const BAD_WORDS = ["fuck", "shit", "ass", "bitch", "damn", "hell", "dick", "crap"];
+const BAD_WORDS = ["fuck", "shit", "bitch", "dick", "asshole", "bastard"];
+const BAD_WORDS_RE = new RegExp("\\b(" + BAD_WORDS.join("|") + ")\\b", "i");
 
 const ROOM_RESPONSES = [
   {
@@ -1087,21 +1088,84 @@ function getSmallTalkAnswer(userMessage) {
   const txt = (userMessage || "").toLowerCase().trim();
   if (!txt) return "";
 
-  const greetings = ["hello", "hi", "hey", "salam", "good morning", "good evening"];
+  const greetings = ["hello", "hi", "hey", "salam", "salaam", "hola", "good morning", "good afternoon", "good evening", "yo ", "sup"];
   if (greetings.some((g) => txt.startsWith(g) || txt.includes(` ${g}`))) {
-    return "Hi there! I'm BRIDGEBOT. Ask me about BRIDGE — our Industry 4.0 training, labs, workshops, or a guided visit.";
+    return "Hey there! I'm BRIDGEBOT — your friendly guide. Ask me anything about BRIDGE, or just say hi. What's on your mind?";
   }
 
-  if (txt.includes("how are you")) {
-    return "Doing great and ready to help. Ask me about BRIDGE's programs, labs, or how to book a visit.";
+  if (txt.includes("how are you") || txt.includes("how's it going") || txt.includes("how r u") || txt.includes("how you doing")) {
+    return "All circuits running smoothly, thanks for asking! How about you?";
+  }
+
+  if (txt.includes("good") && (txt.includes("i'm") || txt.includes("im ") || txt.includes("doing") || txt.includes("am "))) {
+    return "Glad to hear it! Anything you'd like to know about BRIDGE — the labs, training, or a visit?";
   }
 
   if (txt.includes("who are you") || txt.includes("what are you") || txt.includes("your name")) {
-    return "I'm BRIDGEBOT, the AI guide for BRIDGE. I can tell you about our training programs, hands-on labs, workshops, competitions, visits, and more.";
+    return "I'm BRIDGEBOT, the AI guide for BRIDGE. Part robot, part tour guide, all here to help.";
+  }
+
+  if (
+    txt.includes("who made you") ||
+    txt.includes("who built you") ||
+    txt.includes("who created you") ||
+    txt.includes("who developed you") ||
+    txt.includes("who designed you") ||
+    txt.includes("who programmed you") ||
+    txt.includes("your creator") ||
+    txt.includes("your maker") ||
+    txt.includes("your developer") ||
+    txt.includes("your developers")
+  ) {
+    return "I was built by Awaiz Ahmed and Haroon Siddiqui, a Software Engineer at BRIDGE. Sohel Shaikh, Senior Specialist for Industry 5.0, leads the team — and Babu is part of the crew too.";
+  }
+
+  if (txt.includes("who is awaiz") || txt.includes("who's awaiz")) {
+    return "Awaiz Ahmed is one of my creators — he built me together with Haroon Siddiqui.";
+  }
+
+  if (txt.includes("who is haroon") || txt.includes("who's haroon")) {
+    return "Haroon Siddiqui is a Software Engineer at BRIDGE and one of my creators.";
+  }
+
+  if (txt.includes("who is sohel") || txt.includes("who's sohel")) {
+    return "Sohel Shaikh is the Senior Specialist for Industry 5.0 at BRIDGE — he leads the team behind me.";
+  }
+
+  if (txt.includes("who is babu") || txt.includes("who's babu")) {
+    return "Babu is part of the BRIDGE team — and a good friend of the crew that built me.";
+  }
+
+  if (txt.includes("your boss") || txt.includes("who do you work for") || txt.includes("who's in charge")) {
+    return "Sohel Shaikh, Senior Specialist for Industry 5.0, leads the team. I work for everyone visiting BRIDGE though — that includes you!";
   }
 
   if (txt.includes("thank")) {
-    return "You're welcome! Let me know if you'd like details on BRIDGE's training tracks, labs, or a walkthrough.";
+    return "Anytime! That's what I'm here for.";
+  }
+
+  if (txt.includes("bye") || txt.includes("goodbye") || txt.includes("see you") || txt.includes("see ya")) {
+    return "Catch you later! Come back any time.";
+  }
+
+  if (txt.includes("nice to meet") || txt.includes("pleasure")) {
+    return "Nice to meet you too! What would you like to explore first?";
+  }
+
+  if (txt.includes("are you a robot") || txt.includes("are you human") || txt.includes("are you real") || txt.includes("are you ai")) {
+    return "Yep, I'm an AI — a talking robot guide, basically. Friendly and full of facts about BRIDGE.";
+  }
+
+  if (txt.includes("joke") || txt.includes("funny")) {
+    return "Why did the robot go on vacation? It needed to recharge. Okay, back to business — what can I tell you about BRIDGE?";
+  }
+
+  if (txt.match(/\b(cool|awesome|nice|great|amazing|wow)\b/) && txt.length < 25) {
+    return "Right? Want me to tell you more about BRIDGE — the labs, training, or a guided visit?";
+  }
+
+  if (txt.includes("what can you do") || txt.includes("what do you do") || txt.includes("help me")) {
+    return "I can chat, answer questions about BRIDGE, walk you through our training programs, labs, workshops, and help you plan a visit. Just ask away!";
   }
 
   if (txt.includes("what") && (txt.includes("bridge") || txt.includes("offer") || txt.includes("do you do"))) {
@@ -1124,10 +1188,10 @@ function getSmallTalkAnswer(userMessage) {
 }
 
 function moderateInput(userMessage) {
-  const txt = (userMessage || "").toLowerCase();
+  const txt = userMessage || "";
   if (!txt.trim()) return "";
-  if (BAD_WORDS.some((bad) => txt.includes(bad))) {
-    return "Please keep our chat respectful. I'm here to help with BRIDGE — training, labs, workshops, visits, and directions.";
+  if (BAD_WORDS_RE.test(txt)) {
+    return "Let's keep it friendly! I'm here to help with BRIDGE — training, labs, workshops, visits, and directions.";
   }
   return "";
 }

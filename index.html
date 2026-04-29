@@ -13,12 +13,11 @@
 
   <script>
     // Apply saved theme BEFORE stylesheets paint to avoid a flash.
+    // Default to light mode; only respect an explicit saved choice.
     (function () {
       try {
         var saved = localStorage.getItem("bridgebot-theme");
-        var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-        var theme = saved || (prefersDark ? "dark" : "light");
-        if (theme === "dark") document.documentElement.classList.add("dark");
+        if (saved === "dark") document.documentElement.classList.add("dark");
       } catch (_) {}
     })();
   </script>
