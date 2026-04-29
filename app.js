@@ -1925,17 +1925,11 @@ const americanMaleProfile = { gender: "male", lang: ["en-US"], names: AMERICAN_M
 const americanFemaleProfile = { gender: "female", lang: ["en-US"], names: AMERICAN_FEMALE_NAMES };
 
 const avatarVoiceProfiles = {
-  muhammad: {
-    gender: "male",
-    lang: ["ar-SA", "ar-AE", "ar-EG", "ar"],
-    names: [
-      "Microsoft Hamed Online (Natural) - Arabic (Saudi Arabia)",
-      "Microsoft Naayf Online (Natural) - Arabic (Saudi Arabia)",
-      "Microsoft Hamdan Online (Natural) - Arabic (United Arab Emirates)",
-      "Microsoft Shakir Online (Natural) - Arabic (Egypt)",
-      "Maged"
-    ]
-  },
+  // Muhammad now uses a clear English male voice — Arabic TTS voices
+  // (Maged on Safari, Hamed on Edge) read English with a heavy accent
+  // that's hard to understand. Pitch/rate in avatarVoiceSettings still
+  // give him a slightly distinct delivery from the other males.
+  muhammad: americanMaleProfile,
   sohel: americanMaleProfile,
   tom: americanMaleProfile,
   aki: americanMaleProfile,
