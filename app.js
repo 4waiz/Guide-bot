@@ -262,7 +262,12 @@ function setupSpeech() {
 // Pre-recorded greeting clips play through Muhammad every 40s on idle.
 // Browsers block <audio>.play() until the user has interacted once, so
 // the loop only starts after the first tap (audioUnlocked = true).
-const IDLE_GREETING_CLIPS = ["./audio1.mp3", "./audio2.mp3", "./audio3.mp3", "./audio4.mp3"];
+const IDLE_GREETING_CLIPS = [
+  { src: "./audio1.mp3", text: "Salam, I'm BRIDGE AI Bot, your guide to the BRIDGE Centre. Tap speak and ask me anything — our labs, training, or a visit." },
+  { src: "./audio2.mp3", text: "Hi there, I'm BRIDGE AI Bot. Curious about Industry 4.0, our cobots, or a guided tour? Just tap speak." },
+  { src: "./audio3.mp3", text: "Salam! I'm BRIDGE AI Bot. Want to hear about our hands-on labs or training programs? Tap speak to start." },
+  { src: "./audio4.mp3", text: "Hello, I'm BRIDGE AI Bot — your friendly guide. Tap speak any time to ask a question." }
+];
 let idleGreetingTimer = null;
 let idleGreetingIndex = 0;
 let idleGreetingAudio = null;
@@ -332,15 +337,20 @@ function playIdleGreeting() {
     loadAvatar("muhammad");
   }
 
-  const src = IDLE_GREETING_CLIPS[idleGreetingIndex % IDLE_GREETING_CLIPS.length];
+  const clip = IDLE_GREETING_CLIPS[idleGreetingIndex % IDLE_GREETING_CLIPS.length];
   idleGreetingIndex = (idleGreetingIndex + 1) % IDLE_GREETING_CLIPS.length;
+
+  // Show the spoken caption in the chat output.
+  if (output && clip.text) {
+    output.innerHTML = formatTextForOutput("BRIDGEBOT", clip.text);
+  }
 
   if (!idleGreetingAudio) {
     idleGreetingAudio = new Audio();
     idleGreetingAudio.preload = "auto";
     idleGreetingAudio.crossOrigin = "anonymous";
   }
-  idleGreetingAudio.src = src;
+  idleGreetingAudio.src = clip.src;
 
   const finish = () => {
     setSpeechActivity(false);
@@ -366,10 +376,21 @@ function playIdleGreeting() {
 
 function startIdleGreetingLoop() {
   if (idleGreetingTimer) return;
+  // Fire one immediately so the bot greets the visitor as soon as audio
+  // is unlocked, then continue every 40 seconds.
+  if (isIdleForGreeting()) playIdleGreeting();
   idleGreetingTimer = setInterval(() => {
     if (!isIdleForGreeting()) return;
     playIdleGreeting();
   }, 40000);
+}
+
+// Called once the avatar GLB has loaded — if audio is already unlocked
+// (user tapped before the model finished loading) play the first greeting.
+function maybePlayGreetingOnAvatarReady() {
+  if (audioUnlocked && isIdleForGreeting()) {
+    playIdleGreeting();
+  }
 }
 
 (async function init() {
@@ -678,6 +699,12 @@ function loadAvatar(avatarId) {
       if (loadingTimeout) clearTimeout(loadingTimeout);
       if (avatarLoading) {
         avatarLoading.style.display = "none";
+      }
+
+      // If audio is already unlocked (user tapped before model finished),
+      // greet them now so the avatar starts talking the moment it's ready.
+      if (typeof maybePlayGreetingOnAvatarReady === "function") {
+        setTimeout(maybePlayGreetingOnAvatarReady, 200);
       }
 
       const mouthNames = ["jawOpen", "mouthOpen", "viseme_aa", "viseme_OH", "MouthOpen", "v_aa"];
