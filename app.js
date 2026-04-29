@@ -16,8 +16,20 @@ function resolveChatApiUrl() {
   const { protocol, hostname, port } = window.location;
   // Served by our Node server (8787 is the API port). Use relative path.
   if (port === "8787" || port === "8788") return "/api/chat";
-  // Opened via a static file server — hit Node on the same host.
-  return `${protocol}//${hostname}:8787/api/chat`;
+  // Local dev with a separate static file server (e.g. `npx serve` on :3000):
+  // hit the Node API on the same host at :8787. Only do this for localhost/LAN
+  // hostnames — on a deployed origin (Vercel etc.) use a same-origin relative
+  // path so the platform's serverless /api/chat handles it.
+  const isLocal =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    /^192\.168\./.test(hostname) ||
+    /^10\./.test(hostname) ||
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
+  if (isLocal && port && port !== "8787" && port !== "8788") {
+    return `${protocol}//${hostname}:8787/api/chat`;
+  }
+  return "/api/chat";
 }
 const CHAT_API_URL = resolveChatApiUrl();
 
@@ -1365,12 +1377,6 @@ function findBestFaqAnswer(userMessage) {
 async function callOpenAI(systemPrompt, userMessage) {
   await ensureFaqsLoaded();
 
-  const smallTalk = getSmallTalkAnswer(userMessage);
-  if (smallTalk) return smallTalk;
-
-  const faq = findBestFaqAnswer(userMessage);
-  if (faq) return faq;
-
   try {
     const res = await fetch(CHAT_API_URL, {
       method: "POST",
@@ -1378,18 +1384,24 @@ async function callOpenAI(systemPrompt, userMessage) {
       body: JSON.stringify({ system: systemPrompt, user: userMessage }),
     });
 
-    if (!res.ok) {
+    if (res.ok) {
+      const data = await res.json();
+      const reply = (data.reply || "").trim();
+      if (reply) return reply;
+    } else {
       console.error("chat api error", res.status, await res.text().catch(() => ""));
-      return "I'm having trouble reaching my AI service right now. Please try again in a moment.";
     }
-
-    const data = await res.json();
-    return (data.reply || "").trim() ||
-      "I don't have a good answer for that yet. Try asking about EDGE programs, labs, visits, or directions.";
   } catch (err) {
     console.error("chat api network error", err);
-    return "I can't reach my AI service. Make sure the backend is running (npm run server).";
   }
+
+  const smallTalk = getSmallTalkAnswer(userMessage);
+  if (smallTalk) return smallTalk;
+
+  const faq = findBestFaqAnswer(userMessage);
+  if (faq) return faq;
+
+  return "I'm having trouble reaching my AI service right now. Please try again in a moment.";
 }
 
 // =======================
