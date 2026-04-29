@@ -275,7 +275,7 @@ function setupSpeech() {
 // Browsers block <audio>.play() until the user has interacted once, so
 // the loop only starts after the first tap (audioUnlocked = true).
 const IDLE_GREETING_CLIPS = [
-  { src: "./audio1.mp3", text: "Salam, I'm BRIDGE AI Bot, your guide to the BRIDGE Centre. Tap speak and ask me anything — our labs, training, or a visit." },
+  { src: "./audio1.mp3", text: "Salam, I'm BRIDGE AI Bot, your guide to BRIDGE. Tap speak and ask me anything — our labs, training, or a visit." },
   { src: "./audio2.mp3", text: "Hi there, I'm BRIDGE AI Bot. Curious about Industry 4.0, our cobots, or a guided tour? Just tap speak." },
   { src: "./audio3.mp3", text: "Salam! I'm BRIDGE AI Bot. Want to hear about our hands-on labs or training programs? Tap speak to start." },
   { src: "./audio4.mp3", text: "Hello, I'm BRIDGE AI Bot — your friendly guide. Tap speak any time to ask a question." }

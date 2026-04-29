@@ -1106,9 +1106,10 @@
     }
 
     /* =========================
-       iPad Pro 12.9" (5th gen) portrait ≈ 1024x1366
+       iPad Pro 12.9" (3rd–6th gen) portrait ≈ 1024x1366
+       (min-height lowered to 1180 so Safari with visible URL/tab bar still matches)
        ========================= */
-    @media (min-width: 1000px) and (max-width: 1100px) and (min-height: 1280px) and (orientation: portrait) {
+    @media (min-width: 1000px) and (max-width: 1100px) and (min-height: 1180px) and (orientation: portrait) {
       #root { padding: 20px 28px 28px; align-items: flex-start; }
       #app {
         max-width: 960px;
