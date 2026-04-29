@@ -556,7 +556,6 @@
 
     /* --- TOP BUTTONS (Orange Glossy) --- */
     .top-controls {
-      position: relative;
       width: 100%;
       display: flex;
       justify-content: space-between;
@@ -575,13 +574,9 @@
     }
 
     .top-logo {
-      position: absolute;
-      left: 54%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      height: clamp(56px, 10vw, 96px);
+      height: clamp(32px, 6vw, 56px);
       width: auto;
-      max-width: min(50%, 320px);
+      max-width: min(40%, 260px);
       object-fit: contain;
       padding: 0;
       background: none;
@@ -590,7 +585,8 @@
       box-shadow: none;
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
-      pointer-events: none;
+      flex: 0 1 auto;
+      min-width: 0;
       display: block;
     }
 
@@ -1095,7 +1091,7 @@
       #status-row { font-size: 0.75rem; padding: 8px 10px; }
       #app { gap: 8px; padding: 10px; border-radius: 28px; }
       .top-controls { padding: 6px 12px; border-radius: 14px; }
-      .top-logo { height: 64px; max-width: min(55%, 240px); }
+      .top-logo { height: 40px; padding: 6px 12px; }
       #input-modal .input-card { width: min(520px, 96vw); padding: 22px; }
     }
 
@@ -1129,7 +1125,7 @@
       .status-clock { font-size: 15px; }
 
       .top-controls { padding: 12px 22px; border-radius: 22px; }
-      .top-logo { height: clamp(88px, 11vw, 128px); max-width: min(55%, 420px); }
+      .top-logo { height: clamp(56px, 7.5vw, 80px); max-width: min(50%, 360px); }
       .glassy-btn-orange { min-width: 160px; height: 56px; font-size: 1.35rem; }
 
       #avatar-wrapper { min-height: 520px; padding: 20px 0; }
@@ -1159,7 +1155,7 @@
         border-radius: 40px;
         margin-top: 16px;
       }
-      .top-logo { height: clamp(68px, 7.5vw, 96px); max-width: min(50%, 340px); }
+      .top-logo { height: clamp(44px, 5vw, 60px); max-width: min(40%, 280px); }
       .glassy-btn-orange { min-width: 140px; height: 50px; font-size: 1.2rem; }
       #avatar-wrapper { min-height: 340px; padding: 8px 0; }
       #avatar-container { width: clamp(320px, 38vw, 420px); height: clamp(320px, 38vw, 420px); }
@@ -1456,7 +1452,7 @@
       <!-- Top Buttons -->
       <div class="top-controls">
         <button id="btn-speak" class="glassy-btn-orange">Speak</button>
-        <img id="top-logo" src="./darklogo.svg" data-light-src="./darklogo.svg" data-dark-src="./logo.svg" alt="BRIDGEBOT logo" class="top-logo">
+        <img id="top-logo" src="./logo.png" data-light-src="./logo.png" data-dark-src="./darklogo.png" alt="BRIDGEBOT logo" class="top-logo">
         <button id="btn-paths" class="glassy-btn-orange">Paths</button>
       </div>
 
