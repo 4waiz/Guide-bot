@@ -313,7 +313,7 @@ function startMouthFromAudio(audioEl) {
       let sum = 0;
       for (let i = 0; i < data.length; i++) sum += data[i];
       const avg = sum / data.length / 255; // 0..1
-      const strength = Math.min(1, avg * 2.4);
+      const strength = Math.min(0.55, avg * 1.2);
       mouthPulseStrength = strength;
       mouthPulseUntil = Date.now() + 80;
       idleGreetingRafId = requestAnimationFrame(tick);
