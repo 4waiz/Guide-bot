@@ -1229,7 +1229,7 @@
       }
     }
 
-    /* Glow ring container - sits behind avatar */
+    /* Glow ring container - drawn as outline so Safari can't clip it via overflow:hidden */
     #avatar-container::before,
     #avatar-container::after {
       content: "";
@@ -1238,69 +1238,74 @@
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.4s ease, transform 0.4s ease;
-      z-index: -1;
     }
 
-    /* Hide unused outer halo - we use the clean carousel-style ring on ::after only */
+    /* Outer drop-glow layer (sits outside avatar via negative inset on wrapper) */
     #avatar-container::before {
-      display: none;
+      inset: -22px;
+      background: transparent;
+      z-index: 1;
+      box-shadow: 0 16px 36px rgba(255, 159, 0, 0.45);
     }
 
-    /* RING - matches carousel selected thumb: solid colored ring + soft drop glow */
+    /* RING - rendered as outline so overflow:hidden on the same element does NOT clip it (Safari fix) */
     #avatar-container::after {
       inset: 0;
       background: transparent;
       border: 0;
-      box-shadow:
-        0 0 0 5px var(--orange-mid),
-        0 16px 36px rgba(255, 159, 0, 0.45);
+      outline: 5px solid var(--orange-mid);
+      outline-offset: 0;
+      z-index: 2;
     }
 
     /* STATE: IDLE - no glow */
-    #avatar-container.state-idle::after {
+    #avatar-container.state-idle::after,
+    #avatar-container.state-idle::before {
       opacity: 0;
     }
 
     /* STATE: LISTENING (user is speaking) - ORANGE carousel ring */
     #avatar-container.state-listening::after {
       opacity: 1;
-      box-shadow:
-        0 0 0 5px var(--orange-mid),
-        0 16px 36px rgba(255, 159, 0, 0.5);
+      outline-color: var(--orange-mid);
       animation: ring-pulse-orange 1.6s ease-in-out infinite;
+    }
+    #avatar-container.state-listening::before {
+      opacity: 1;
+      box-shadow: 0 16px 36px rgba(255, 159, 0, 0.55);
     }
 
     /* STATE: THINKING - dimmer orange ring, subtle pulse */
     #avatar-container.state-thinking::after {
       opacity: 0.7;
-      box-shadow:
-        0 0 0 4px rgba(255, 159, 0, 0.65),
-        0 12px 28px rgba(255, 159, 0, 0.3);
+      outline: 4px solid rgba(255, 159, 0, 0.65);
       animation: ring-pulse-subtle 2.4s ease-in-out infinite;
+    }
+    #avatar-container.state-thinking::before {
+      opacity: 0.7;
+      box-shadow: 0 12px 28px rgba(255, 159, 0, 0.3);
     }
 
     /* STATE: SPEAKING (AI is answering) - BLUE carousel ring */
     #avatar-container.state-speaking::after {
       opacity: 1;
-      box-shadow:
-        0 0 0 5px #3b82f6,
-        0 16px 36px rgba(59, 130, 246, 0.5);
+      outline-color: #3b82f6;
       animation: ring-pulse-blue 1.6s ease-in-out infinite;
+    }
+    #avatar-container.state-speaking::before {
+      opacity: 1;
+      box-shadow: 0 16px 36px rgba(59, 130, 246, 0.55);
     }
 
     /* Keyframes - orange pulse (listening) */
     @keyframes ring-pulse-orange {
       0%, 100% {
         transform: scale(1);
-        box-shadow:
-          0 0 0 5px var(--orange-mid),
-          0 16px 36px rgba(255, 159, 0, 0.5);
+        outline-width: 5px;
       }
       50% {
         transform: scale(1.025);
-        box-shadow:
-          0 0 0 6px var(--orange-mid),
-          0 20px 44px rgba(255, 159, 0, 0.7);
+        outline-width: 6px;
       }
     }
 
@@ -1308,15 +1313,11 @@
     @keyframes ring-pulse-blue {
       0%, 100% {
         transform: scale(1);
-        box-shadow:
-          0 0 0 5px #3b82f6,
-          0 16px 36px rgba(59, 130, 246, 0.5);
+        outline-width: 5px;
       }
       50% {
         transform: scale(1.025);
-        box-shadow:
-          0 0 0 6px #3b82f6,
-          0 20px 44px rgba(59, 130, 246, 0.7);
+        outline-width: 6px;
       }
     }
 
