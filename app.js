@@ -259,12 +259,122 @@ function setupSpeech() {
 }
 
 // ====================== INIT ======================
-// Browsers block speechSynthesis until the user has interacted with the page,
-// so the greeting is queued and fired on the first tap of Speak/Paths.
-let pendingGreeting = "Salam. I'm BRIDGEBOT, your guide to BRIDGE. Tap speak to begin.";
+// Pre-recorded greeting clips play through Muhammad every 40s on idle.
+// Browsers block <audio>.play() until the user has interacted once, so
+// the loop only starts after the first tap (audioUnlocked = true).
+const IDLE_GREETING_CLIPS = ["./audio1.mp3", "./audio2.mp3", "./audio3.mp3", "./audio4.mp3"];
+let idleGreetingTimer = null;
+let idleGreetingIndex = 0;
+let idleGreetingAudio = null;
+let idleGreetingAudioCtx = null;
+let idleGreetingAnalyser = null;
+let idleGreetingRafId = null;
+
+function isIdleForGreeting() {
+  if (!audioUnlocked) return false;
+  if (window.speechSynthesis && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) return false;
+  if (isVoiceFirstListening || isRecording) return false;
+  if (idleGreetingAudio && !idleGreetingAudio.paused) return false;
+  return true;
+}
+
+// Drive the avatar mouth from the live audio loudness so lips move
+// in time with the recorded speech instead of guessing from text length.
+function startMouthFromAudio(audioEl) {
+  try {
+    if (!idleGreetingAudioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      idleGreetingAudioCtx = new Ctx();
+    }
+    if (idleGreetingAudioCtx.state === "suspended") {
+      idleGreetingAudioCtx.resume().catch(() => {});
+    }
+
+    // MediaElementSource can only be created once per element.
+    if (!audioEl.__mediaSource) {
+      audioEl.__mediaSource = idleGreetingAudioCtx.createMediaElementSource(audioEl);
+      idleGreetingAnalyser = idleGreetingAudioCtx.createAnalyser();
+      idleGreetingAnalyser.fftSize = 256;
+      idleGreetingAnalyser.smoothingTimeConstant = 0.6;
+      audioEl.__mediaSource.connect(idleGreetingAnalyser);
+      audioEl.__mediaSource.connect(idleGreetingAudioCtx.destination);
+    }
+
+    const data = new Uint8Array(idleGreetingAnalyser.frequencyBinCount);
+    const tick = () => {
+      if (!idleGreetingAudio || idleGreetingAudio.paused) return;
+      idleGreetingAnalyser.getByteFrequencyData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) sum += data[i];
+      const avg = sum / data.length / 255; // 0..1
+      const strength = Math.min(1, avg * 2.4);
+      mouthPulseStrength = strength;
+      mouthPulseUntil = Date.now() + 80;
+      idleGreetingRafId = requestAnimationFrame(tick);
+    };
+    idleGreetingRafId = requestAnimationFrame(tick);
+  } catch (err) {
+    console.warn("Audio analyser unavailable, using fallback chatter:", err);
+  }
+}
+
+function stopMouthFromAudio() {
+  if (idleGreetingRafId) cancelAnimationFrame(idleGreetingRafId);
+  idleGreetingRafId = null;
+  mouthPulseStrength = 0;
+  mouthPulseUntil = 0;
+}
+
+function playIdleGreeting() {
+  // Switch to Muhammad so his face is the one moving.
+  if (currentAvatarId !== "muhammad" && typeof loadAvatar === "function") {
+    loadAvatar("muhammad");
+  }
+
+  const src = IDLE_GREETING_CLIPS[idleGreetingIndex % IDLE_GREETING_CLIPS.length];
+  idleGreetingIndex = (idleGreetingIndex + 1) % IDLE_GREETING_CLIPS.length;
+
+  if (!idleGreetingAudio) {
+    idleGreetingAudio = new Audio();
+    idleGreetingAudio.preload = "auto";
+    idleGreetingAudio.crossOrigin = "anonymous";
+  }
+  idleGreetingAudio.src = src;
+
+  const finish = () => {
+    setSpeechActivity(false);
+    stopMouthFromAudio();
+  };
+  idleGreetingAudio.onended = finish;
+  idleGreetingAudio.onerror = (e) => {
+    console.warn("Idle greeting clip failed:", src, e);
+    finish();
+  };
+
+  setSpeechActivity(true, "");
+  const playPromise = idleGreetingAudio.play();
+  if (playPromise && playPromise.catch) {
+    playPromise.then(() => startMouthFromAudio(idleGreetingAudio)).catch((err) => {
+      console.warn("Idle greeting blocked:", err);
+      finish();
+    });
+  } else {
+    startMouthFromAudio(idleGreetingAudio);
+  }
+}
+
+function startIdleGreetingLoop() {
+  if (idleGreetingTimer) return;
+  idleGreetingTimer = setInterval(() => {
+    if (!isIdleForGreeting()) return;
+    playIdleGreeting();
+  }, 40000);
+}
+
 (async function init() {
   await loadFaqs();
-  addLine("BRIDGEBOT", "Salam! I'm BRIDGEBOT, your guide to BRIDGE. Tap SPEAK to ask about our training, labs, or visits.");
+  addLine("BRIDGEBOT", "Salam! I'm BRIDGE AI Bot, your guide to BRIDGE. Tap SPEAK to ask about our training, labs, or visits.");
 })();
 
 // ====================== THREE.JS AVATAR ======================
@@ -1582,13 +1692,9 @@ function unlockAudioForIOS() {
     try { window.speechSynthesis.resume(); } catch (_) {}
   }
 
-  if (pendingGreeting) {
-    const greeting = pendingGreeting;
-    pendingGreeting = null;
-    setTimeout(() => {
-      speakText(greeting);
-    }, 120);
-  }
+  // Kick off the auto-greeting loop after the first user tap (browsers
+  // require a gesture before speechSynthesis is allowed to make sound).
+  startIdleGreetingLoop();
 }
 
 function speakText(text) {
@@ -1699,27 +1805,50 @@ function setStopButton(enabled) {
   if (stopSpeechBtn) stopSpeechBtn.disabled = !enabled;
 }
 
-// Voice settings per avatar - each has distinct pitch/rate for unique sound
+// Voice settings per avatar — pitch/rate tweak the same browser voice so
+// each avatar sounds slightly distinct without losing intelligibility.
+// Guys: clear, casual American male tone. Girls: warmer, slightly higher
+// "girly" pitch. Muhammad uses an Arabic voice (set in profiles below).
 const avatarVoiceSettings = {
-  muhammad: { pitch: 0.85, rate: 0.92, gender: "male" },
-  lorraine: { pitch: 1.15, rate: 1.0, gender: "female" },
-  aki: { pitch: 0.95, rate: 1.05, gender: "male" },
-  amari: { pitch: 1.2, rate: 0.95, gender: "female" },
-  sohel: { pitch: 0.8, rate: 0.88, gender: "male" },
-  maya: { pitch: 1.25, rate: 1.02, gender: "female" },
-  rose: { pitch: 1.1, rate: 0.98, gender: "female" },
-  awaiz: { pitch: 0.9, rate: 0.95, gender: "male" },
-  tom: { pitch: 0.75, rate: 0.9, gender: "male" },
-  babu: { pitch: 0.88, rate: 0.95, gender: "male" },
-  zara: { pitch: 1.22, rate: 0.97, gender: "female" },
-  zola: { pitch: 1.12, rate: 1.03, gender: "female" }
+  muhammad: { pitch: 0.95, rate: 0.95, gender: "male" },
+  lorraine: { pitch: 1.20, rate: 1.00, gender: "female" },
+  aki: { pitch: 0.95, rate: 1.00, gender: "male" },
+  amari: { pitch: 1.25, rate: 0.98, gender: "female" },
+  sohel: { pitch: 0.90, rate: 0.95, gender: "male" },
+  maya: { pitch: 1.30, rate: 1.02, gender: "female" },
+  rose: { pitch: 1.18, rate: 1.00, gender: "female" },
+  awaiz: { pitch: 1.00, rate: 1.00, gender: "male" },
+  tom: { pitch: 0.92, rate: 0.98, gender: "male" },
+  babu: { pitch: 0.97, rate: 1.00, gender: "male" },
+  zara: { pitch: 1.28, rate: 1.00, gender: "female" },
+  zola: { pitch: 1.22, rate: 1.02, gender: "female" }
 };
 
-// Per-avatar accent/region profile: each avatar gets a distinct voice
-// by combining preferred voice NAMES, a preferred LANG tag, and gender.
-// Browsers expose different voice sets, so we fall back gracefully.
+// Per-avatar voice profile.
+// Muhammad → Arabic (Gulf) male voice. All other males → clear American
+// English male. All females → American English female ("girly"). Pitch/rate
+// in avatarVoiceSettings adds personality without changing the accent.
+const AMERICAN_MALE_NAMES = [
+  "Microsoft Guy Online (Natural) - English (United States)",
+  "Microsoft Davis Online (Natural) - English (United States)",
+  "Microsoft Tony Online (Natural) - English (United States)",
+  "Microsoft Andrew Online (Natural) - English (United States)",
+  "Google US English",
+  "Alex", "Fred", "Aaron", "Microsoft David"
+];
+const AMERICAN_FEMALE_NAMES = [
+  "Microsoft Aria Online (Natural) - English (United States)",
+  "Microsoft Jenny Online (Natural) - English (United States)",
+  "Microsoft Ava Online (Natural) - English (United States)",
+  "Microsoft Emma Online (Natural) - English (United States)",
+  "Google US English",
+  "Samantha", "Microsoft Zira", "Allison", "Ava", "Susan"
+];
+
+const americanMaleProfile = { gender: "male", lang: ["en-US"], names: AMERICAN_MALE_NAMES };
+const americanFemaleProfile = { gender: "female", lang: ["en-US"], names: AMERICAN_FEMALE_NAMES };
+
 const avatarVoiceProfiles = {
-  // Male - Arabic (Gulf) accent
   muhammad: {
     gender: "male",
     lang: ["ar-SA", "ar-AE", "ar-EG", "ar"],
@@ -1731,106 +1860,17 @@ const avatarVoiceProfiles = {
       "Maged"
     ]
   },
-  // Male - British
-  sohel: {
-    gender: "male",
-    lang: ["en-GB"],
-    names: [
-      "Microsoft Ryan Online (Natural) - English (United Kingdom)",
-      "Google UK English Male",
-      "Daniel", "Oliver", "Microsoft George"
-    ]
-  },
-  // Male - American
-  tom: {
-    gender: "male",
-    lang: ["en-US"],
-    names: [
-      "Microsoft Guy Online (Natural) - English (United States)",
-      "Google US English",
-      "Alex", "Fred", "Aaron"
-    ]
-  },
-  // Male - Australian
-  aki: {
-    gender: "male",
-    lang: ["en-AU"],
-    names: [
-      "Microsoft William Online (Natural) - English (Australia)",
-      "Lee", "Karen (Australian)", "Microsoft James"
-    ]
-  },
-  // Male - Indian
-  awaiz: {
-    gender: "male",
-    lang: ["en-IN", "hi-IN"],
-    names: [
-      "Microsoft Prabhat Online (Natural) - English (India)",
-      "Google हिन्दी", "Rishi", "Veena"
-    ]
-  },
-
-  // Female - American
-  lorraine: {
-    gender: "female",
-    lang: ["en-US"],
-    names: [
-      "Microsoft Aria Online (Natural) - English (United States)",
-      "Samantha", "Google US English", "Microsoft Jenny"
-    ]
-  },
-  // Female - British
-  rose: {
-    gender: "female",
-    lang: ["en-GB"],
-    names: [
-      "Microsoft Libby Online (Natural) - English (United Kingdom)",
-      "Google UK English Female", "Kate", "Serena"
-    ]
-  },
-  // Female - Irish
-  amari: {
-    gender: "female",
-    lang: ["en-IE", "en-GB"],
-    names: ["Moira", "Microsoft Emily Online (Natural) - English (Ireland)", "Fiona"]
-  },
-  // Female - Australian
-  maya: {
-    gender: "female",
-    lang: ["en-AU"],
-    names: [
-      "Microsoft Natasha Online (Natural) - English (Australia)",
-      "Karen", "Catherine"
-    ]
-  },
-  // Male - Chinese-English
-  babu: {
-    gender: "male",
-    lang: ["zh-CN", "en-US"],
-    names: [
-      "Microsoft Yunxi Online (Natural) - Chinese (Mainland)",
-      "Microsoft Yunyang Online (Natural) - Chinese (Mainland)",
-      "Google 普通话（中国大陆）"
-    ]
-  },
-  // Female - Indian
-  zara: {
-    gender: "female",
-    lang: ["en-IN", "hi-IN"],
-    names: [
-      "Microsoft Neerja Online (Natural) - English (India)",
-      "Google हिन्दी", "Veena", "Lekha"
-    ]
-  },
-  // Female - South African / African English
-  zola: {
-    gender: "female",
-    lang: ["en-ZA", "en-GB"],
-    names: [
-      "Microsoft Leah Online (Natural) - English (South Africa)",
-      "Tessa", "Google UK English Female"
-    ]
-  }
+  sohel: americanMaleProfile,
+  tom: americanMaleProfile,
+  aki: americanMaleProfile,
+  awaiz: americanMaleProfile,
+  babu: americanMaleProfile,
+  lorraine: americanFemaleProfile,
+  rose: americanFemaleProfile,
+  amari: americanFemaleProfile,
+  maya: americanFemaleProfile,
+  zara: americanFemaleProfile,
+  zola: americanFemaleProfile
 };
 
 // Name tokens that strongly indicate gender — used to filter out wrong-gender voices.
