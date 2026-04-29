@@ -1733,29 +1733,19 @@ function unlockAudioForIOS() {
       }
     }
 
-    // Unlock HTML5 <audio> (used by the idle-greeting clips). On iOS Safari
-    // an Audio element only becomes playable after .play() is invoked
-    // synchronously inside a user gesture, with a real (even silent) src.
+    // Unlock HTML5 <audio> globally. iOS Safari treats the first .play()
+    // inside a user gesture as authorization for *all* subsequent <audio>
+    // elements in the same page, so we use a disposable primer element
+    // instead of touching idleGreetingAudio (which would race with the
+    // greeting loop trying to set its own .src).
     try {
-      if (!idleGreetingAudio) {
-        idleGreetingAudio = new Audio();
-        idleGreetingAudio.preload = "auto";
-        idleGreetingAudio.crossOrigin = "anonymous";
-      }
-      // Tiny silent WAV so .play() has something real to start on.
-      idleGreetingAudio.src =
-        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-      idleGreetingAudio.muted = true;
-      const primerPlay = idleGreetingAudio.play();
-      const finishPrime = () => {
-        try { idleGreetingAudio.pause(); } catch (_) {}
-        try { idleGreetingAudio.currentTime = 0; } catch (_) {}
-        idleGreetingAudio.muted = false;
-      };
+      const primer = new Audio(
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="
+      );
+      primer.muted = true;
+      const primerPlay = primer.play();
       if (primerPlay && primerPlay.then) {
-        primerPlay.then(finishPrime).catch(finishPrime);
-      } else {
-        finishPrime();
+        primerPlay.catch(() => {});
       }
     } catch (e) {
       console.warn("HTML audio unlock failed:", e);
