@@ -271,7 +271,7 @@ function setupSpeech() {
 }
 
 // ====================== INIT ======================
-// Pre-recorded greeting clips play through Muhammad every 40s on idle.
+// Pre-recorded greeting clips play through Muhammad every 60s on idle.
 // Browsers block <audio>.play() until the user has interacted once, so
 // the loop only starts after the first tap (audioUnlocked = true).
 const IDLE_GREETING_CLIPS = [
@@ -394,12 +394,12 @@ function playIdleGreeting() {
 function startIdleGreetingLoop() {
   if (idleGreetingTimer) return;
   // Fire one immediately so the bot greets the visitor as soon as audio
-  // is unlocked, then continue every 40 seconds.
+  // is unlocked, then continue every 60 seconds.
   if (isIdleForGreeting()) playIdleGreeting();
   idleGreetingTimer = setInterval(() => {
     if (!isIdleForGreeting()) return;
     playIdleGreeting();
-  }, 40000);
+  }, 60000);
 }
 
 // Called once the avatar GLB has loaded — if audio is already unlocked
@@ -1227,11 +1227,11 @@ function buildSystemPrompt(kind) {
     "- A venue for workshops, competitions, co-development sessions, and demonstrations where technology partners showcase prototypes and advanced technologies.",
     "- Connects academia, industry, and government to strengthen the UAE's industrial competitiveness, accelerate advanced-technology adoption, and support a knowledge-based economy.",
     "- Target audience: engineers, operators, managers, executives, students, and industry partners who want to adopt advanced manufacturing and Industry 4.0 practices.",
-    "Important rules: Never mention the acronym 'LIF' or 'Learning & Innovation Factory' — always refer to the organisation as 'BRIDGE'. Reply only in English. Keep answers short, warm, and conversational (2–4 sentences). If a question is outside BRIDGE's scope, say so briefly and offer to help with programs, labs, visits, or directions.",
+    "Important rules: Never mention the acronym 'LIF' or 'Learning & Innovation Factory' — always refer to the organisation as 'BRIDGE'. Reply only in English. Replies MUST be at most 2 short sentences (under ~30 words total) so they fit the on-screen caption. Tone: professional, concise, slightly robotic — direct and crisp, no filler, no rambling, no lists, no emojis. If a question is outside BRIDGE's scope, say so in one sentence and offer to help with programs, labs, visits, or directions.",
   ].join("\n");
 
   if (kind === "paths") {
-    return bridgeContext + "\n\nYou are currently helping with indoor navigation. The user is starting from the main lobby. Give short, step-by-step walking directions within the building, max 5 steps.";
+    return bridgeContext + "\n\nYou are currently helping with indoor navigation. The user is starting from the main lobby. Give the directions in at most 2 short sentences (under ~30 words total) so they fit the on-screen caption. Professional, concise, slightly robotic — no lists, no numbered steps.";
   }
   return bridgeContext;
 }
