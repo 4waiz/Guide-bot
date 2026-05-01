@@ -1229,96 +1229,61 @@
       }
     }
 
-    /* Glow ring container - drawn as outline so Safari can't clip it via overflow:hidden */
-    #avatar-container::before,
-    #avatar-container::after {
-      content: "";
+    /* Frame wraps the avatar container with no clipping, so the ring sibling can extend outside */
+    #avatar-frame {
+      position: relative;
+      display: inline-block;
+      line-height: 0;
+    }
+
+    /* RING - solid colored circle drawn as a sibling of #avatar-container, NOT clipped by it.
+       Uses border (always follows border-radius on every browser, including older Safari). */
+    #avatar-ring {
       position: absolute;
+      inset: -10px;
       border-radius: 50%;
+      border: 6px solid transparent;
+      box-sizing: border-box;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.4s ease, transform 0.4s ease;
+      transition: opacity 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+      z-index: 3;
     }
 
-    /* Outer drop-glow layer (sits outside avatar via negative inset on wrapper) */
-    #avatar-container::before {
-      inset: -22px;
-      background: transparent;
-      z-index: 1;
-      box-shadow: 0 16px 36px rgba(255, 159, 0, 0.45);
-    }
-
-    /* RING - rendered as outline so overflow:hidden on the same element does NOT clip it (Safari fix) */
-    #avatar-container::after {
-      inset: 0;
-      background: transparent;
-      border: 0;
-      outline: 5px solid var(--orange-mid);
-      outline-offset: 0;
-      z-index: 2;
-    }
-
-    /* STATE: IDLE - no glow */
-    #avatar-container.state-idle::after,
-    #avatar-container.state-idle::before {
-      opacity: 0;
-    }
-
-    /* STATE: LISTENING (user is speaking) - ORANGE carousel ring */
-    #avatar-container.state-listening::after {
+    /* STATE: LISTENING (user is speaking) - ORANGE solid ring + warm glow */
+    #avatar-frame:has(.state-listening) #avatar-ring {
       opacity: 1;
-      outline-color: var(--orange-mid);
+      border-color: var(--orange-mid);
+      box-shadow: 0 14px 34px rgba(255, 159, 0, 0.5);
       animation: ring-pulse-orange 1.6s ease-in-out infinite;
     }
-    #avatar-container.state-listening::before {
-      opacity: 1;
-      box-shadow: 0 16px 36px rgba(255, 159, 0, 0.55);
-    }
 
-    /* STATE: THINKING - dimmer orange ring, subtle pulse */
-    #avatar-container.state-thinking::after {
-      opacity: 0.7;
-      outline: 4px solid rgba(255, 159, 0, 0.65);
+    /* STATE: THINKING - dimmer orange ring */
+    #avatar-frame:has(.state-thinking) #avatar-ring {
+      opacity: 0.75;
+      border-color: rgba(255, 159, 0, 0.7);
+      box-shadow: 0 12px 26px rgba(255, 159, 0, 0.3);
       animation: ring-pulse-subtle 2.4s ease-in-out infinite;
     }
-    #avatar-container.state-thinking::before {
-      opacity: 0.7;
-      box-shadow: 0 12px 28px rgba(255, 159, 0, 0.3);
-    }
 
-    /* STATE: SPEAKING (AI is answering) - BLUE carousel ring */
-    #avatar-container.state-speaking::after {
+    /* STATE: SPEAKING (AI is answering) - BLUE solid ring + cool glow */
+    #avatar-frame:has(.state-speaking) #avatar-ring {
       opacity: 1;
-      outline-color: #3b82f6;
+      border-color: #3b82f6;
+      box-shadow: 0 14px 34px rgba(59, 130, 246, 0.5);
       animation: ring-pulse-blue 1.6s ease-in-out infinite;
-    }
-    #avatar-container.state-speaking::before {
-      opacity: 1;
-      box-shadow: 0 16px 36px rgba(59, 130, 246, 0.55);
     }
 
     /* Keyframes - orange pulse (listening) */
     @keyframes ring-pulse-orange {
-      0%, 100% {
-        transform: scale(1);
-        outline-width: 5px;
-      }
-      50% {
-        transform: scale(1.025);
-        outline-width: 6px;
-      }
+      0%, 100% { transform: scale(1); border-width: 6px; }
+      50%      { transform: scale(1.02); border-width: 7px; }
     }
 
     /* Keyframes - blue pulse (speaking) */
     @keyframes ring-pulse-blue {
-      0%, 100% {
-        transform: scale(1);
-        outline-width: 5px;
-      }
-      50% {
-        transform: scale(1.025);
-        outline-width: 6px;
-      }
+      0%, 100% { transform: scale(1); border-width: 6px; }
+      50%      { transform: scale(1.02); border-width: 7px; }
     }
 
     /* Keyframes - subtle (thinking) */
@@ -1329,10 +1294,7 @@
 
     /* Reduced motion fallback */
     @media (prefers-reduced-motion: reduce) {
-      #avatar-container::after { animation: none !important; }
-      #avatar-container.state-listening::after { opacity: 1; transform: scale(1); }
-      #avatar-container.state-thinking::after { opacity: 0.75; }
-      #avatar-container.state-speaking::after { opacity: 1; transform: scale(1); }
+      #avatar-ring { animation: none !important; }
     }
 
   </style>
@@ -1397,8 +1359,11 @@
 
       <!-- Avatar Sphere -->
       <div id="avatar-wrapper">
-        <div id="avatar-container">
-          <div id="avatar-loading">Loading Guide...</div>
+        <div id="avatar-frame">
+          <div id="avatar-container">
+            <div id="avatar-loading">Loading Guide...</div>
+          </div>
+          <div id="avatar-ring" aria-hidden="true"></div>
         </div>
       </div>
 

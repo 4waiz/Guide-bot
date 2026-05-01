@@ -367,6 +367,7 @@ function playIdleGreeting() {
   const finish = () => {
     setSpeechActivity(false);
     stopMouthFromAudio();
+    setGlowState("idle");
   };
   idleGreetingAudio.onended = finish;
   idleGreetingAudio.onerror = (e) => {
@@ -377,11 +378,15 @@ function playIdleGreeting() {
   setSpeechActivity(true, "");
   const playPromise = idleGreetingAudio.play();
   if (playPromise && playPromise.catch) {
-    playPromise.then(() => startMouthFromAudio(idleGreetingAudio)).catch((err) => {
+    playPromise.then(() => {
+      setGlowState("speaking");
+      startMouthFromAudio(idleGreetingAudio);
+    }).catch((err) => {
       console.warn("Idle greeting blocked:", err);
       finish();
     });
   } else {
+    setGlowState("speaking");
     startMouthFromAudio(idleGreetingAudio);
   }
 }
